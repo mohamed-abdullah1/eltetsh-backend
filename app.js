@@ -1,6 +1,5 @@
 const dotenv = require("dotenv").config();
 const express = require("express");
-const goalsRouter = require("./routes/goals.router");
 const usersRouter = require("./routes/users.router");
 const { errorMiddleware } = require("./middleware/error.middleware");
 
@@ -12,7 +11,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 connectDB();
-app.use("/api/goals", goalsRouter);
 app.use("/api/auth/", usersRouter);
 app.use(errorMiddleware);
 
