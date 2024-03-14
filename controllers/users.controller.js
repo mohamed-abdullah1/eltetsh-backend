@@ -7,8 +7,8 @@ const genJwt = require("../helpers/genJwt.helper");
 //@route    POST /api/auth
 //@access   PUBLIC
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, password, email } = req.body;
-  if (!name || !password || !email) {
+  const { name, password, email, nationalId } = req.body;
+  if (!name || !password || !email || !nationalId) {
     res.status(400);
     throw new Error("please complete all fields");
   }
@@ -28,11 +28,14 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     password: hashedPass,
     email,
+    nationalId: nationalId + "",
   });
+
   res.status(201).json({
     _id: newUser?._doc?._id,
     name: newUser?._doc?.name,
     email: newUser?._doc?.email,
+    nationalId: newUser?._doc?.nationalId,
     createdAt: newUser?._doc?.createdAt,
     updatedAt: newUser?._doc?.updatedAt,
     token: genJwt(newUser?._doc?._id),

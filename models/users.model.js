@@ -17,11 +17,11 @@ const userSchema = mongoose.Schema(
     },
     nationalId: {
       type: String,
-      required: true,
+      required: [true, "National ID field is required"],
       maxLength: 14,
       minLength: 14,
       validate: {
-        validator: function () {
+        validator: function (v) {
           return /^\d{14}$/.test(v);
         },
         message: (props) =>
