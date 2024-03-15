@@ -17,6 +17,7 @@ const userSchema = mongoose.Schema(
     },
     nationalId: {
       type: String,
+      unique: [true, "National Id must be unique"],
       required: [true, "National ID field is required"],
       maxLength: 14,
       minLength: 14,
@@ -27,6 +28,11 @@ const userSchema = mongoose.Schema(
         message: (props) =>
           `${props.value} is not a valid 14-digit national ID!`,
       },
+    },
+    role: {
+      type: String,
+      enum: ["admin", "student", "doctor", "staff"], // Possible roles
+      default: "student", // Default role if not specified
     },
   },
   {

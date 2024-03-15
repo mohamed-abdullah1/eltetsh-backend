@@ -2,13 +2,13 @@ const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/users.model");
 const genJwt = require("../helpers/genJwt.helper");
-
+const NationalId_User = require("../models/nationalId_user.model");
 //@desc     Register a user
 //@route    POST /api/auth
 //@access   PUBLIC
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, password, email, nationalId } = req.body;
-  if (!name || !password || !email || !nationalId) {
+  const { name, password, email, nationalId, role } = req.body;
+  if (!name || !password || !email || !nationalId || !role) {
     res.status(400);
     throw new Error("please complete all fields");
   }
@@ -17,6 +17,12 @@ const registerUser = asyncHandler(async (req, res) => {
   if (exists) {
     res.status(400);
     throw new Error("User is already exist");
+  }
+  //check if the national_id of this user is in the db or not
+  const nationalIdExists = !!(await NationalId_User.findOne({ nationalId }));
+  if (!nationalIdExists) {
+    res.status(400);
+    throw new Error("This user's NationalId isn't allowed to register");
   }
 
   //hash pass
@@ -29,6 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
     password: hashedPass,
     email,
     nationalId: nationalId + "",
+    role,
   });
 
   res.status(201).json({
@@ -39,6 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
     createdAt: newUser?._doc?.createdAt,
     updatedAt: newUser?._doc?.updatedAt,
     token: genJwt(newUser?._doc?._id),
+    role: newUser?._doc?.role,
   });
 });
 
@@ -54,7 +62,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) {
     res.status(400);
-    throw new Error("user not found, please login first");
+    throw new Error("This user isn't in system, Please Sign Up First");
   }
   const { password: pass, ...loggedUser } = user?._doc;
 
