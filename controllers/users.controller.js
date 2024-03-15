@@ -45,7 +45,7 @@ const registerUser = asyncHandler(async (req, res) => {
     nationalId: newUser?._doc?.nationalId,
     createdAt: newUser?._doc?.createdAt,
     updatedAt: newUser?._doc?.updatedAt,
-    token: genJwt(newUser?._doc?._id),
+    token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
     role: newUser?._doc?.role,
   });
 });
@@ -70,7 +70,9 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(401);
     throw new Error("try again, password is wrong");
   }
-  res.status(200).json({ ...loggedUser, token: genJwt(loggedUser?._id) });
+  res
+    .status(200)
+    .json({ ...loggedUser, token: genJwt(loggedUser?._id, loggedUser?.role) });
 });
 
 module.exports = {
