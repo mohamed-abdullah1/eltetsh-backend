@@ -4,14 +4,12 @@ const {
   updateNationalId,
   addNationalId,
 } = require("../controllers/nationalId_user.controller");
-const verifyToken = require("../middleware/auth.middleware");
+const { verifyAdmin } = require("../middleware/auth.middleware");
 
 const router = require("express").Router();
-const verifyAdmin = (req, res, next) => {
-  next();
-};
+
 router.route("/add").post(verifyAdmin, addNationalId);
-router.route("/all").get(verifyToken, getNationalIds);
+router.route("/all").get(verifyAdmin, getNationalIds);
 router
   .route("/:id")
   .delete(verifyAdmin, deleteNationalId)

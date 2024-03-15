@@ -19,12 +19,19 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User is already exist");
   }
   //check if the national_id of this user is in the db or not
-  const nationalIdExists = !!(await NationalId_User.findOne({ nationalId }));
-  if (!nationalIdExists) {
+  const nationalIdUser = await NationalId_User.findOne({ nationalId });
+  const isExistNationalId = !!nationalIdUser;
+  if (!isExistNationalId) {
     res.status(400);
     throw new Error("This user's NationalId isn't allowed to register");
   }
-
+  //check if the role in req equals the role in nationalIdUsers
+  if (nationalIdUser?.role !== role) {
+    res.status(400);
+    throw new Error(
+      "The role you enter doesn't match the role associated to the nationalId"
+    );
+  }
   //hash pass
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);
@@ -36,6 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     nationalId: nationalId + "",
     role,
+    nationalIdUser: nationalIdUser?._id,
   });
 
   res.status(201).json({

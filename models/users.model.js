@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -28,6 +27,11 @@ const userSchema = mongoose.Schema(
         message: (props) =>
           `${props.value} is not a valid 14-digit national ID!`,
       },
+    },
+    nationalIdUser: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "User_NationalIds",
+      required: true,
     },
     role: {
       type: String,
