@@ -38,6 +38,30 @@ const userSchema = mongoose.Schema(
       enum: ["admin", "student", "doctor", "staff"], // Possible roles
       default: "student", // Default role if not specified
     },
+    department: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "Department",
+      default: null,
+    },
+    studentCourses: [
+      {
+        course: {
+          type: mongoose.SchemaTypes.ObjectId,
+          ref: "Course",
+        },
+        studentResult: {
+          type: Number,
+        },
+      },
+    ],
+    doctorCourses: [
+      {
+        docCourse: {
+          type: mongoose.SchemaTypes.ObjectId,
+          ref: "Course",
+        },
+      },
+    ],
   },
   {
     timestamps: true,
