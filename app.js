@@ -7,6 +7,7 @@ const colors = require("colors");
 //routes
 const usersRouter = require("./routes/users.router");
 const nationalIdRouter = require("./routes/nationalId_user.router");
+const courseRouter = require("./routes/courses.router");
 const testRouter = require("./helpers/test.helper");
 //middlewares
 const { errorMiddleware } = require("./middleware/error.middleware");
@@ -24,7 +25,11 @@ connectDB();
 app.use("/", testRouter);
 app.use("/api/auth/", usersRouter);
 app.use("/api/nationalId_user/", nationalIdRouter);
+app.use("/api/courses/", courseRouter);
 app.use(errorMiddleware);
+app.use("*", function (_, res) {
+  res.status(404).send({ message: "NOT FOUND" });
+});
 
 const port = process.env.PORT || 2000;
 

@@ -43,8 +43,8 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
       next();
     } catch (err) {
       console.log(`err ${err}`.red);
-      res.status(401);
-      throw new Error("not authorized " + err);
+      res.status(500);
+      throw new Error(err);
     }
   }
   if (!token) {
