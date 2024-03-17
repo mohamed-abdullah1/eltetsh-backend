@@ -49,7 +49,7 @@ const createCourse = asyncHandler(async (req, res) => {
 //@route    POST /api/courses/all
 //@access   Private ADMIN
 const getAllCourses = asyncHandler(async (req, res) => {
-  const courses = await Course.find();
+  const courses = await Course.find().populate("department");
   res.status(200).json({ count: courses.length, result: courses });
 });
 
@@ -58,7 +58,7 @@ const getAllCourses = asyncHandler(async (req, res) => {
 //@access   Private ADMIN
 const getCourseById = asyncHandler(async (req, res) => {
   const courseId = req.params.id;
-  const course = await Course.findOne({ _id: courseId });
+  const course = await Course.findOne({ _id: courseId }).populate("department");
   res.status(200).json({ course });
 });
 
@@ -81,23 +81,25 @@ const deleteCourse = asyncHandler(async (req, res) => {
   });
 });
 
-//@desc     Delete one course
-//@route    DELETE /api/courses/:id
+//@desc     update one course
+//@route    PUT /api/courses/:id
 //@access   Private ADMIN
 const updateCourse = asyncHandler(async (req, res) => {
   const itemId = req.params.id;
   const updateFields = req.body;
   const oldCourse = await Course.findOne({ _id: itemId });
   //check if a two courses has the same appointment or not
-  const { day, time } = updateFields.appointment?.date;
-  const courseExist = !!(await Course.findOne({
-    year: oldCourse?.year,
-    "appointment.date.day": day,
-    "appointment.date.time": time,
-  }));
-  if (courseExist) {
-    res.status(400);
-    throw new Error("this appointment is already taken");
+  if (updateFields.appointment) {
+    const { day, time } = updateFields.appointment?.date;
+    const courseExist = !!(await Course.findOne({
+      year: oldCourse?.year,
+      "appointment.date.day": day,
+      "appointment.date.time": time,
+    }));
+    if (courseExist) {
+      res.status(400);
+      throw new Error("this appointment is already taken");
+    }
   }
 
   // Update the item in the database

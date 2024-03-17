@@ -7,8 +7,26 @@ const NationalId_User = require("../models/nationalId_user.model");
 //@route    POST /api/auth
 //@access   PUBLIC
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, password, email, nationalId, role } = req.body;
+  const {
+    name,
+    password,
+    email,
+    nationalId,
+    role,
+    department,
+    studentCourses,
+    doctorCourses,
+    year,
+  } = req.body;
   if (!name || !password || !email || !nationalId || !role) {
+    res.status(400);
+    throw new Error("please complete all fields");
+  }
+  if (role === "student" && (!studentCourses || !year || !department)) {
+    res.status(400);
+    throw new Error("please complete all fields");
+  }
+  if (role === "doctor" && (!doctorCourses || !department)) {
     res.status(400);
     throw new Error("please complete all fields");
   }
@@ -37,14 +55,30 @@ const registerUser = asyncHandler(async (req, res) => {
   const hashedPass = await bcrypt.hash(password, salt);
 
   //create user
-  const newUser = await User.create({
-    name,
-    password: hashedPass,
-    email,
-    nationalId: nationalId + "",
-    role,
-    nationalIdUser: nationalIdUser?._id,
-  });
+  const newUserData =
+    role === "student"
+      ? {
+          name,
+          password: hashedPass,
+          email,
+          nationalId: nationalId + "",
+          role,
+          nationalIdUser: nationalIdUser?._id,
+          department,
+          studentCourses,
+          year,
+        }
+      : {
+          name,
+          password: hashedPass,
+          email,
+          nationalId: nationalId + "",
+          role,
+          nationalIdUser: nationalIdUser?._id,
+          department,
+          doctorCourses,
+        };
+  const newUser = await User.create(newUserData);
 
   res.status(201).json({
     _id: newUser?._doc?._id,
@@ -53,8 +87,12 @@ const registerUser = asyncHandler(async (req, res) => {
     nationalId: newUser?._doc?.nationalId,
     createdAt: newUser?._doc?.createdAt,
     updatedAt: newUser?._doc?.updatedAt,
-    token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
     role: newUser?._doc?.role,
+    department: newUser?._doc?.department,
+    studentCourses: newUser?._doc?.studentCourses,
+    doctorCourses: newUser?._doc?.doctorCourses,
+    year: newUser?._doc?.year,
+    token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
   });
 });
 
@@ -67,7 +105,11 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("complete all fields");
   }
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate([
+    "department",
+    "studentCourses.course",
+    "doctorCourses",
+  ]);
   if (!user) {
     res.status(400);
     throw new Error("This user isn't in system, Please Sign Up First");

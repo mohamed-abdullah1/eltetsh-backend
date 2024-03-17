@@ -56,12 +56,16 @@ const userSchema = mongoose.Schema(
     ],
     doctorCourses: [
       {
-        docCourse: {
+        course: {
           type: mongoose.SchemaTypes.ObjectId,
           ref: "Course",
         },
       },
     ],
+    year: {
+      type: String,
+      enum: ["1st", "2nd", "3th", "4th", "5th"],
+    },
   },
   {
     timestamps: true,
