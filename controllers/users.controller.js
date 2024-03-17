@@ -107,12 +107,12 @@ const registerUser = asyncHandler(async (req, res) => {
 //@route    POST /api/auth/login
 //@access   Public
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { nationalId, password } = req.body;
+  if (!nationalId || !password) {
     res.status(400);
     throw new Error("complete all fields");
   }
-  const user = await User.findOne({ email }).populate([
+  const user = await User.findOne({ nationalId }).populate([
     "department",
     "studentCourses.course",
     "doctorCourses",
