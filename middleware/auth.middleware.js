@@ -11,8 +11,10 @@ const verifyToken = asyncHandler(async (req, res, next) => {
       //get token
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log(decoded);
-      req.user = await User.findOne({ _id: decoded?.id }, { password: false });
+      req.user = await User.findOne(
+        { _id: decoded?.id },
+        { password: false }
+      ).populate(["department", "studentCourses.course", "doctorCourses"]);
       next();
     } catch (err) {
       console.log(err);

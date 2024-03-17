@@ -121,7 +121,7 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("This user isn't in system, Please Sign Up First");
   }
-  const { password: pass, ...loggedUser } = user?._doc;
+  const { password: pass, name, email, ...loggedUser } = user?._doc;
 
   if (!(await bcrypt.compare(password, pass))) {
     res.status(401);
@@ -129,10 +129,14 @@ const loginUser = asyncHandler(async (req, res) => {
   }
   res
     .status(200)
-    .json({ ...loggedUser, token: genJwt(loggedUser?._id, loggedUser?.role) });
+    .json({ name, email, token: genJwt(loggedUser?._id, loggedUser?.role) });
 });
 
+const getUserInfo = asyncHandler(async (req, res) => {
+  res.status(200).json({ user: req.user });
+});
 module.exports = {
   registerUser,
   loginUser,
+  getUserInfo,
 };
