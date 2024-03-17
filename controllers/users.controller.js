@@ -43,6 +43,12 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("This user's NationalId isn't allowed to register");
   }
+  //change the NationalIds_user and sign it with registerInSystem :true
+  await NationalId_User.updateOne(
+    { nationalId },
+    { $set: { registeredInSystem: true } },
+    { runValidators: true, new: true }
+  );
   //check if the role in req equals the role in nationalIdUsers
   if (nationalIdUser?.role !== role) {
     res.status(400);
@@ -50,6 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
       "The role you enter doesn't match the role associated to the nationalId"
     );
   }
+
   //hash pass
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);

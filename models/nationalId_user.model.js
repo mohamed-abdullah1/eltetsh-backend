@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "student", "staff", "doctor"],
     required: true,
   },
+  registeredInSystem: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Create the model
