@@ -27,6 +27,37 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     throw new Error("not authorized , no token");
   }
 });
+const verifyDoctor = asyncHandler(async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      //get token
+      token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log({ decoded });
+      if (decoded?.role !== "doctor") {
+        res.status(401);
+        throw new Error("not authorized, Doctor only can access it");
+      }
+      req.user = await User.findOne(
+        { _id: decoded?.id },
+        { password: false }
+      ).populate(["department", "studentCourses.course", "doctorCourses"]);
+      next();
+    } catch (err) {
+      console.log(err);
+      res.status(401);
+      throw new Error("not authorized");
+    }
+  }
+  if (!token) {
+    res.status(401);
+    throw new Error("not authorized , no token");
+  }
+});
 const verifyAdmin = asyncHandler(async (req, res, next) => {
   let token;
   if (
@@ -55,4 +86,4 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { verifyToken, verifyAdmin };
+module.exports = { verifyToken, verifyAdmin, verifyDoctor };

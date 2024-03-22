@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
 const postSchema = new mongoose.Schema(
   {
+    postFilesId: {
+      type: String,
+      default: uuidv4, // Set default value to a UUID
+    },
     title: {
       type: String,
       required: true,
