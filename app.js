@@ -16,12 +16,14 @@ const { errorMiddleware } = require("./middleware/error.middleware");
 
 //db connection
 const connectDB = require("./config/db.config");
+const paginationMiddleware = require("./middleware/pagination.middleware");
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
+app.use(paginationMiddleware);
 
 connectDB();
 app.use("/", testRouter);

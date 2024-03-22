@@ -20,7 +20,8 @@ const createDepartment = asyncHandler(async (req, res) => {
 //@route    GET /api/departments/all
 //@access   Private ADMIN
 const getAllDepartments = asyncHandler(async (req, res) => {
-  const docs = await Department.find();
+  const { skip, limit } = req.pagination;
+  const docs = await Department.find().skip(skip).limit(limit);
   res.status(200).json({ count: docs.length, data: docs });
 });
 //@desc     GET a department

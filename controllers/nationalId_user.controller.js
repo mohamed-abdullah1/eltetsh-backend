@@ -5,7 +5,8 @@ const User = require("../models/users.model");
 //@route    GET /api/nationalId_user/all
 //@access   Private ADMIN
 const getNationalIds = asyncHandler(async (req, res) => {
-  const allDocs = await NationalIds.find();
+  const { skip, limit } = req.pagination;
+  const allDocs = await NationalIds.find().skip(skip).limit(limit);
   res.status(200).send({ result: allDocs, count: allDocs.length });
 });
 //@desc     Del a nationalId

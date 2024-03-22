@@ -21,7 +21,6 @@ const storage = getStorage();
 // @desc    create a posts
 // @route   POST /api/posts
 // @access  PRIVATE ==>USER
-
 const createPost = asyncHandler(async (req, res) => {
   const { title, content, department, course } = req.body;
   const author = req.user._id;
@@ -79,7 +78,11 @@ const createPost = asyncHandler(async (req, res) => {
 // @route   GET /api/posts
 // @access  PRIVATE
 const getAllPosts = asyncHandler(async (req, res) => {
-  const posts = await Post.find().populate(["author", "department", "course"]);
+  const { skip, limit } = req.pagination;
+  const posts = await Post.find()
+    .populate(["author", "department", "course"])
+    .skip(skip)
+    .limit(limit);
   let fetchedPosts = await Promise.all(
     posts.map(async (post) => {
       const storageRef = ref(storage, `posts/${post.postFilesId}`);
@@ -90,7 +93,6 @@ const getAllPosts = asyncHandler(async (req, res) => {
           const downloadURL = await getDownloadURL(item);
           const metadata = await getMetadata(item);
 
-          console.log({ ...item });
           return {
             name: item.name,
             downloadURL: downloadURL,
@@ -101,7 +103,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
       return { ...post?._doc, files: fileData };
     })
   );
-  res.status(200).json(fetchedPosts);
+  res.status(200).json({ results: fetchedPosts, count: fetchedPosts.length });
 });
 
 // @desc    get a post by id
