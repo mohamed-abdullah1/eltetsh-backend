@@ -3,6 +3,22 @@ const asyncHandler = require("express-async-handler");
 const User = require("../models/users.model");
 const genJwt = require("../helpers/genJwt.helper");
 const NationalId_User = require("../models/nationalId_user.model");
+
+const { v4: uuidv4 } = require("uuid");
+
+const { initializeApp } = require("firebase/app");
+const {
+  getStorage,
+  ref,
+  getDownloadURL,
+  uploadBytesResumable,
+} = require("firebase/storage");
+const config = require("../config/firebase.config");
+const { getMetadata, list } = require("firebase/storage");
+// Initialize a firebase application
+initializeApp(config);
+// Initialize Cloud Storage and get a reference to the service
+const storage = getStorage();
 //@desc     Register a user
 //@route    POST /api/auth
 //@access   PUBLIC
@@ -22,6 +38,8 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("please complete all fields");
   }
+
+  //
   if (role === "student" && (!studentCourses || !year || !department)) {
     res.status(400);
     throw new Error("please complete all fields");
@@ -60,6 +78,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //hash pass
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);
+  const userImagesId = uuidv4();
 
   //create user
   const newUserData =
@@ -74,6 +93,7 @@ const registerUser = asyncHandler(async (req, res) => {
           department,
           studentCourses,
           year,
+          userImagesId,
         }
       : {
           name,
@@ -84,8 +104,27 @@ const registerUser = asyncHandler(async (req, res) => {
           nationalIdUser: nationalIdUser?._id,
           department,
           doctorCourses,
+          userImagesId,
         };
   const newUser = await User.create(newUserData);
+  //!! user image
+  const storageRef = ref(storage, `users/${userImagesId}/${name}-profile-img`);
+
+  // Create file metadata including the content type
+  const metadata = {
+    contentType: req.file.mimetype,
+  };
+
+  // Upload the file in the bucket storage
+  const snapshot = await uploadBytesResumable(
+    storageRef,
+    req.file.buffer,
+    metadata
+  );
+  //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
+
+  // Grab the public url
+  const downloadURL = await getDownloadURL(snapshot.ref);
 
   res.status(201).json({
     _id: newUser?._doc?._id,
@@ -99,6 +138,11 @@ const registerUser = asyncHandler(async (req, res) => {
     studentCourses: newUser?._doc?.studentCourses,
     doctorCourses: newUser?._doc?.doctorCourses,
     year: newUser?._doc?.year,
+    image: {
+      name: req.file.originalname,
+      type: req.file.mimetype,
+      downloadURL: downloadURL,
+    },
     token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
   });
 });
@@ -121,19 +165,42 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("This user isn't in system, Please Sign Up First");
   }
-  const { password: pass, name, email, ...loggedUser } = user?._doc;
+  const { password: pass, name, email, role, ...loggedUser } = user?._doc;
 
   if (!(await bcrypt.compare(password, pass))) {
     res.status(401);
     throw new Error("try again, password is wrong");
   }
-  res
-    .status(200)
-    .json({ name, email, token: genJwt(loggedUser?._id, loggedUser?.role) });
+  res.status(200).json({
+    name,
+    email,
+    role,
+    token: genJwt(loggedUser?._id, loggedUser?.role),
+  });
 });
 
 const getUserInfo = asyncHandler(async (req, res) => {
-  res.status(200).json({ user: req.user });
+  // List all files in the storage bucket
+  const storageRef = ref(storage, `users/${req.user.userImagesId}`);
+  const files = await list(storageRef);
+  // Iterate through each item in the list and retrieve download URLs
+  const fileData = await Promise.all(
+    files.items.map(async (item) => {
+      const downloadURL = await getDownloadURL(item);
+      const metadata = await getMetadata(item);
+      return {
+        name: item.name,
+        downloadURL: downloadURL,
+        type: metadata.contentType,
+      };
+    })
+  );
+  res
+    .status(200)
+    .json({
+      user: req.user,
+      userImage: fileData.length > 0 ? fileData[0] : [],
+    });
 });
 module.exports = {
   registerUser,

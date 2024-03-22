@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
 const userSchema = mongoose.Schema(
   {
+    userImagesId: {
+      type: String,
+      default: uuidv4,
+    },
     name: {
       type: String,
       required: [true, "Name field is required"],
