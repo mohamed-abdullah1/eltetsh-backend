@@ -21,7 +21,7 @@ initializeApp(config);
 const storage = getStorage();
 //@desc     Register a user
 //@route    POST /api/auth
-//@access   PUBLIC
+//@access   PRIVATE ADMIN ONLY
 const registerUser = asyncHandler(async (req, res) => {
   const {
     name,
@@ -138,7 +138,7 @@ const registerUser = asyncHandler(async (req, res) => {
     studentCourses: newUser?._doc?.studentCourses,
     doctorCourses: newUser?._doc?.doctorCourses,
     year: newUser?._doc?.year,
-    image: {
+    user_image: {
       name: req.file.originalname,
       type: req.file.mimetype,
       downloadURL: downloadURL,
@@ -178,7 +178,9 @@ const loginUser = asyncHandler(async (req, res) => {
     token: genJwt(loggedUser?._id, loggedUser?.role),
   });
 });
-
+//@desc     Login a user
+//@route    POST /api/auth/login
+//@access   Public
 const getUserInfo = asyncHandler(async (req, res) => {
   // List all files in the storage bucket
   const storageRef = ref(storage, `users/${req.user.userImagesId}`);
@@ -195,15 +197,93 @@ const getUserInfo = asyncHandler(async (req, res) => {
       };
     })
   );
-  res
-    .status(200)
-    .json({
-      user: req.user,
-      userImage: fileData.length > 0 ? fileData[0] : [],
-    });
+  res.status(200).json({
+    user: req.user,
+    user_image: fileData.length > 0 ? fileData[0] : [],
+  });
 });
+// @desc    update a user
+//@route    POST /api/auth/update
+//@access   PRIVATE
+const updateUserInfo = asyncHandler(async (req, res) => {
+  const { name, department, studentCourses, doctorCourses, year } = req.body;
+  const userImagesId = uuidv4();
+  //!! user image
+  let storageRef = ref(storage, `users/${req.user.userImagesId}`);
+  let files = await list(storageRef);
+  // Iterate through each item in the list and retrieve download URLs
+  let fileData = await Promise.all(
+    files.items.map(async (item) => {
+      const downloadURL = await getDownloadURL(item);
+      const metadata = await getMetadata(item);
+
+      return {
+        name: item.name,
+        downloadURL: downloadURL,
+        type: metadata.contentType,
+      };
+    })
+  );
+
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: req.params.id },
+    {
+      name,
+      department,
+      studentCourses,
+      doctorCourses,
+      year,
+      userImagesId: req.file ? userImagesId : req.user.userImagesId,
+    },
+    { new: true, runValidators: true }
+  );
+  const completeUpdatedUser = await updatedUser.populate([
+    "department",
+    "studentCourses.course",
+    "doctorCourses.course",
+  ]);
+  if (!updatedUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  if (req?.file) {
+    storageRef = ref(storage, `users/${userImagesId}/${userImagesId}`);
+
+    // Create file metadata including the content type
+    let metadata = {
+      contentType: req.file?.mimetype,
+    };
+
+    // Upload the file in the bucket storage
+    const snapshot = await uploadBytesResumable(
+      storageRef,
+      req.file?.buffer,
+      metadata
+    );
+    //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
+
+    // Grab the public url
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return res.status(200).json({
+      ...completeUpdatedUser?._doc,
+      user_image: {
+        name: req.file.originalname,
+        type: req.file.mimetype,
+        downloadURL: downloadURL,
+      },
+    });
+  }
+
+  res.status(200).json({
+    ...completeUpdatedUser?._doc,
+    user_image: {
+      ...fileData[0],
+    },
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
   getUserInfo,
+  updateUserInfo,
 };

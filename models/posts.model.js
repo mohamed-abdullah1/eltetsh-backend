@@ -30,14 +30,14 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
     reactions: {
-      type: Map,
-      of: Number,
-      default: {
-        like: 0,
-        dislike: 0,
-        love: 0,
-        angry: 0,
-      },
+      like: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
+      dislike: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
+      love: [
+        {
+          userId: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
+        },
+      ],
+      angry: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
     },
   },
   {

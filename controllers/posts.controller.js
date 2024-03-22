@@ -11,6 +11,7 @@ const {
 } = require("firebase/storage");
 const config = require("../config/firebase.config");
 const { getMetadata, list } = require("firebase/storage");
+const ObjectId = require("mongoose").Types.ObjectId;
 
 //Initialize a firebase application
 initializeApp(config);
@@ -176,10 +177,64 @@ const deletePost = asyncHandler(async (req, res) => {
   });
 });
 
+const reactPost = asyncHandler(async (req, res) => {
+  const { reactionType } = req.body;
+  const { id } = req.params;
+  const { _id: userId, name } = req.user;
+  const post = await Post.findById(id);
+  const userIdObjectId = new ObjectId(userId);
+
+  const validReactionTypes = ["like", "dislike", "love", "angry"];
+  if (!validReactionTypes.includes(reactionType)) {
+    return res.status(400).json({ error: "Invalid reaction type" });
+  }
+  let prevReactionType;
+  Object.keys(post.reactions).forEach((key) => {
+    if (
+      post.reactions[key].filter((u_id) => {
+        const anotherObjectId = new ObjectId(userId);
+        return u_id?.equals(anotherObjectId);
+      }).length > 0
+    ) {
+      prevReactionType = key;
+      return;
+    }
+  });
+
+  if (prevReactionType === reactionType) {
+    return res.status(400).json({
+      error: "THIS USER HAS REACTED ON THIS POST by the same reaction",
+    });
+  }
+  console.log({ prevReactionType });
+  const updatedPost = await Post.findByIdAndUpdate(
+    id,
+    {
+      $push: { [`reactions.${reactionType}`]: userIdObjectId },
+      $pull: {
+        [`reactions.${prevReactionType}`]: userIdObjectId,
+      },
+    },
+    { new: true }
+  );
+  const completePost = await updatedPost.populate([
+    "reactions.angry",
+    "reactions.like",
+    "reactions.dislike",
+    "reactions.love",
+  ]);
+  if (!updatedPost) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  res.status(200).json(completePost);
+});
+
 module.exports = {
   createPost,
   getAllPosts,
   getPostById,
   updatePost,
   deletePost,
+  reactPost,
 };

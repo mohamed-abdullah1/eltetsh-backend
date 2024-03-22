@@ -5,6 +5,7 @@ const {
   getPostById,
   updatePost,
   deletePost,
+  reactPost,
 } = require("../controllers/posts.controller");
 const multer = require("multer");
 const { verifyDoctor, verifyToken } = require("../middleware/auth.middleware");
@@ -19,4 +20,5 @@ router
   .get(verifyToken, getPostById)
   .put(verifyDoctor, updatePost)
   .delete(verifyDoctor, deletePost);
+router.route("/react/:id").put(verifyToken, reactPost);
 module.exports = router;

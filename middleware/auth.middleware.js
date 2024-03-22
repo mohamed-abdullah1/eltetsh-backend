@@ -27,6 +27,21 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     throw new Error("not authorized , no token");
   }
 });
+const ObjectId = require("mongoose").Types.ObjectId;
+
+const isUserOrAdmin = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { role } = req.user;
+  console.log({ id, userId: req.user._id });
+  const anotherObjectId = new ObjectId(id);
+
+  if (req.user._id.equals(anotherObjectId) || role === "admin") {
+    next();
+  } else {
+    res.status(401);
+    throw new Error("not authorized , user or admin only can edit this info");
+  }
+});
 const verifyDoctor = asyncHandler(async (req, res, next) => {
   let token;
   if (
@@ -86,4 +101,4 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { verifyToken, verifyAdmin, verifyDoctor };
+module.exports = { verifyToken, verifyAdmin, verifyDoctor, isUserOrAdmin };
