@@ -3,7 +3,7 @@ const asyncHandler = require("express-async-handler");
 const User = require("../models/users.model");
 const genJwt = require("../helpers/genJwt.helper");
 const NationalId_User = require("../models/nationalId_user.model");
-
+const Course = require("../models/courses.model");
 const { v4: uuidv4 } = require("uuid");
 
 const { initializeApp } = require("firebase/app");
@@ -30,15 +30,26 @@ const registerUser = asyncHandler(async (req, res) => {
     nationalId,
     role,
     department,
-    studentCourses,
-    doctorCourses,
+    studentCourses = [],
+    doctorCourses = [],
     year,
   } = req.body;
+  console.log({ body: req.body });
+
   if (!name || !password || !email || !nationalId || !role) {
     res.status(400);
     throw new Error("please complete all fields");
   }
-
+  //!CHECK IF THE COURSE AND DEPARTMENT ENTERED BY THE USER ARE CONVIENENT
+  const courseExists = await Promise.all(
+    [...studentCourses, ...doctorCourses].map(async (item) => {
+      return !!(await Course.findOne({ _id: item.course, department }));
+    })
+  );
+  if (courseExists.includes(false)) {
+    res.status(400);
+    throw new Error("Course is not in that department");
+  }
   //
   if (role === "student" && (!studentCourses || !year || !department)) {
     res.status(400);
@@ -49,7 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("please complete all fields");
   }
   //check if the user exists or not
-  const exists = !!(await User.findOne({ email }));
+  const exists = !!(await User.findOne({ nationalId }));
   if (exists) {
     res.status(400);
     throw new Error("User is already exist");
@@ -107,24 +118,27 @@ const registerUser = asyncHandler(async (req, res) => {
           userImagesId,
         };
   const newUser = await User.create(newUserData);
-  //!! user image
-  const storageRef = ref(storage, `users/${userImagesId}/${name}-profile-img`);
+  //! USER IMAGE
+  let storageRef, metadata, downloadURL, snapshot;
+  if (req?.file) {
+    storageRef = ref(storage, `users/${userImagesId}/${name}-profile-img`);
 
-  // Create file metadata including the content type
-  const metadata = {
-    contentType: req.file.mimetype,
-  };
+    // Create file metadata including the content type
+    metadata = {
+      contentType: req.file.mimetype,
+    };
 
-  // Upload the file in the bucket storage
-  const snapshot = await uploadBytesResumable(
-    storageRef,
-    req.file.buffer,
-    metadata
-  );
-  //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
+    // Upload the file in the bucket storage
+    snapshot = await uploadBytesResumable(
+      storageRef,
+      req.file.buffer,
+      metadata
+    );
+    //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
 
-  // Grab the public url
-  const downloadURL = await getDownloadURL(snapshot.ref);
+    // Grab the public url
+    downloadURL = await getDownloadURL(snapshot.ref);
+  }
 
   res.status(201).json({
     _id: newUser?._doc?._id,
@@ -138,11 +152,13 @@ const registerUser = asyncHandler(async (req, res) => {
     studentCourses: newUser?._doc?.studentCourses,
     doctorCourses: newUser?._doc?.doctorCourses,
     year: newUser?._doc?.year,
-    user_image: {
-      name: req.file.originalname,
-      type: req.file.mimetype,
-      downloadURL: downloadURL,
-    },
+    user_image: req?.file
+      ? {
+          name: req.file.originalname,
+          type: req.file.mimetype,
+          downloadURL: downloadURL,
+        }
+      : {},
     token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
   });
 });
@@ -159,7 +175,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ nationalId }).populate([
     "department",
     "studentCourses.course",
-    "doctorCourses",
+    "doctorCourses.course",
   ]);
   if (!user) {
     res.status(400);

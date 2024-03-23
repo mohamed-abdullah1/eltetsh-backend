@@ -14,7 +14,11 @@ const verifyToken = asyncHandler(async (req, res, next) => {
       req.user = await User.findOne(
         { _id: decoded?.id },
         { password: false }
-      ).populate(["department", "studentCourses.course", "doctorCourses"]);
+      ).populate([
+        "department",
+        "studentCourses.course",
+        "doctorCourses.course",
+      ]);
       next();
     } catch (err) {
       console.log(err);
@@ -60,7 +64,11 @@ const verifyDoctor = asyncHandler(async (req, res, next) => {
       req.user = await User.findOne(
         { _id: decoded?.id },
         { password: false }
-      ).populate(["department", "studentCourses.course", "doctorCourses"]);
+      ).populate([
+        "department",
+        "studentCourses.course",
+        "doctorCourses.course",
+      ]);
       next();
     } catch (err) {
       console.log(err);

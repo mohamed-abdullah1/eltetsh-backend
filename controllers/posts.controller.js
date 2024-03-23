@@ -1,4 +1,5 @@
 const Post = require("../models/posts.model");
+const Course = require("../models/courses.model");
 const asyncHandler = require("express-async-handler");
 const { v4: uuidv4 } = require("uuid");
 
@@ -28,6 +29,12 @@ const createPost = asyncHandler(async (req, res) => {
   if (!title || !content || !department || !course) {
     res.status(400);
     throw new Error("Please add all fields");
+  }
+  //! CHECK IF THE COURSE IS IN THAT DEPARTMENT OR NOT
+  const courseExists = await Course.findOne({ _id: course, department });
+  if (!courseExists) {
+    res.status(400);
+    throw new Error("Course is not in that department");
   }
   const postFilesId = uuidv4();
   //images,pdfs,files
@@ -79,9 +86,26 @@ const createPost = asyncHandler(async (req, res) => {
 // @route   GET /api/posts
 // @access  PRIVATE
 const getAllPosts = asyncHandler(async (req, res) => {
+  const { filterByCourseId, filterByDepartmentId } = req.query;
   const { skip, limit } = req.pagination;
-  const posts = await Post.find()
-    .populate(["author", "department", "course"])
+  const searchObjDepart =
+    filterByDepartmentId && filterByCourseId
+      ? { department: filterByDepartmentId, course: filterByCourseId }
+      : filterByDepartmentId
+      ? { department: filterByDepartmentId }
+      : filterByCourseId
+      ? { course: filterByCourseId }
+      : {};
+  const posts = await Post.find(searchObjDepart)
+    .populate([
+      "author",
+      "department",
+      "course",
+      "reactions.angry",
+      "reactions.love",
+      "reactions.dislike",
+      "reactions.like",
+    ])
     .skip(skip)
     .limit(limit);
   let fetchedPosts = await Promise.all(
@@ -104,7 +128,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
       return { ...post?._doc, files: fileData };
     })
   );
-  res.status(200).json({ results: fetchedPosts, count: fetchedPosts.length });
+  res.status(200).json({ count: fetchedPosts.length, results: fetchedPosts });
 });
 
 // @desc    get a post by id

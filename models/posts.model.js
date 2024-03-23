@@ -32,11 +32,7 @@ const postSchema = new mongoose.Schema(
     reactions: {
       like: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
       dislike: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
-      love: [
-        {
-          userId: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-        },
-      ],
+      love: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }, ,],
       angry: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
     },
   },
