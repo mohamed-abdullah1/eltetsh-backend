@@ -210,7 +210,8 @@ const reactPost = asyncHandler(async (req, res) => {
 
   const validReactionTypes = ["like", "dislike", "love", "angry"];
   if (!validReactionTypes.includes(reactionType)) {
-    return res.status(400).json({ error: "Invalid reaction type" });
+    res.status(400);
+    throw new Error("Invalid reaction type");
   }
   let prevReactionType;
   Object.keys(post.reactions).forEach((key) => {
@@ -226,9 +227,8 @@ const reactPost = asyncHandler(async (req, res) => {
   });
 
   if (prevReactionType === reactionType) {
-    return res.status(400).json({
-      error: "THIS USER HAS REACTED ON THIS POST by the same reaction",
-    });
+    res.status(400);
+    throw new Error("THIS USER HAS REACTED ON THIS POST by the same reaction");
   }
   console.log({ prevReactionType });
   const updatedPost = await Post.findByIdAndUpdate(

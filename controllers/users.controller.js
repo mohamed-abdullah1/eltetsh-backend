@@ -191,7 +191,7 @@ const loginUser = asyncHandler(async (req, res) => {
     name,
     email,
     role,
-    token: genJwt(loggedUser?._id, loggedUser?.role),
+    token: genJwt(loggedUser?._id, role),
   });
 });
 //@desc     Login a user
