@@ -2,12 +2,12 @@ const mongoose = require("mongoose");
 
 // Schema for quiz questions
 const QuizQuestionsSchema = new mongoose.Schema({
-  department_id: {
+  department: {
     type: mongoose.SchemaTypes.ObjectId,
     ref: "Department",
     require: [true, "department required"],
   },
-  course_id: {
+  course: {
     type: mongoose.SchemaTypes.ObjectId,
     ref: "Course",
     require: [true, "course required"],
@@ -50,10 +50,11 @@ const QuizResultSchema = new mongoose.Schema({
   answers: [
     {
       questionId: { type: mongoose.SchemaTypes.ObjectId },
-      answer: { type: mongoose.SchemaTypes.ObjectId },
+      selectedOptionId: { type: mongoose.SchemaTypes.ObjectId },
     },
   ],
   result: Number,
+  allowStudentToSeeResult: { type: Boolean, default: false },
 });
 
 const QuizQuestions = mongoose.model("QuizQuestion", QuizQuestionsSchema);
