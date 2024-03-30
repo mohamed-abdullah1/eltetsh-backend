@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Course = require("../models/courses.model");
-
+const Post = require("../models/posts.model");
+const User = require("../models/users.model");
 //@desc     Create a course
 //@route    POST /api/courses/create
 //@access   Private ADMIN
@@ -26,6 +27,7 @@ const createCourse = asyncHandler(async (req, res) => {
     year,
     "appointment.date.day": day,
     "appointment.date.time": time,
+    department,
   }));
   if (courseExist) {
     res.status(400);
@@ -49,8 +51,12 @@ const createCourse = asyncHandler(async (req, res) => {
 //@route    POST /api/courses/all
 //@access   Private ADMIN
 const getAllCourses = asyncHandler(async (req, res) => {
+  const { filterByDepartment } = req.query;
+
   const { skip, limit } = req.pagination;
-  const courses = await Course.find()
+  const courses = await Course.find(
+    filterByDepartment && { department: filterByDepartment }
+  )
     .populate("department")
     .skip(skip)
     .limit(limit);
@@ -70,6 +76,7 @@ const getCourseById = asyncHandler(async (req, res) => {
 //@route    DELETE /api/courses/:id
 //@access   Private ADMIN
 const deleteCourse = asyncHandler(async (req, res) => {
+  console.log(req.user.role);
   const courseId = req.params.id;
   //check if the course exist or not
   const course = await Course.findOne({ _id: courseId });
@@ -78,6 +85,34 @@ const deleteCourse = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("this course doesn't exist");
   }
+  await Post.deleteMany({ course: courseId });
+  const usersToEdit = await User.find({
+    doctorCourses: { $elemMatch: { course: courseId } },
+  });
+  usersToEdit.forEach(async (user) => {
+    if (user.role === "doctor" || req.user.role === "admin") {
+      await User.findOneAndUpdate(
+        {
+          doctorCourses: {
+            $elemMatch: { course: courseId },
+          },
+        },
+        { $pull: { doctorCourses: { course: courseId } } }, // Updated to remove the matched element
+        { new: true, useFindAndModify: false }
+      );
+    } else if (user.role === "student" || req.user.role === "admin") {
+      await User.findOneAndUpdate(
+        {
+          studentCourses: {
+            $elemMatch: { course: courseId },
+          },
+        },
+        { $pull: { studentCourses: { course: courseId } } }, // Updated to remove the matched element
+        { new: true, useFindAndModify: false }
+      );
+    }
+  });
+
   await Course.deleteOne({ _id: courseId });
   res.status(200).json({
     message: "Deleted Successfully",

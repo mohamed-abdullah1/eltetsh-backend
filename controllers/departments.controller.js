@@ -1,5 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const Department = require("../models/departments.model");
+const Post = require("../models/posts.model");
+const Course = require("../models/courses.model");
+const User = require("../models/users.model");
 
 //@desc     Create a department
 //@route    POST /api/departments/create
@@ -56,6 +59,42 @@ const deleteDepartment = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("this department doesn't exist");
   }
+  await Post.deleteMany({ department: departmentId });
+  const coursesToDelete = await Course.find({ department: departmentId });
+  coursesToDelete.forEach(async (courseId) => {
+    const usersToEdit = await User.find({
+      doctorCourses: { $elemMatch: { course: courseId } },
+    });
+    usersToEdit.forEach(async (user) => {
+      if (user.role === "doctor" || req.user.role === "admin") {
+        await User.findOneAndUpdate(
+          {
+            doctorCourses: {
+              $elemMatch: { course: courseId },
+            },
+          },
+          { $pull: { doctorCourses: { course: courseId } } }, // Updated to remove the matched element
+          { new: true, useFindAndModify: false }
+        );
+      } else if (user.role === "student" || req.user.role === "admin") {
+        await User.findOneAndUpdate(
+          {
+            studentCourses: {
+              $elemMatch: { course: courseId },
+            },
+          },
+          { $pull: { studentCourses: { course: courseId } } }, // Updated to remove the matched element
+          { new: true, useFindAndModify: false }
+        );
+      }
+    });
+  });
+  await Course.deleteMany({ department: departmentId });
+  await User.findOneAndUpdate(
+    { department: departmentId },
+    { department: null },
+    { useFindAndModify: false }
+  );
   await Department.deleteOne({ _id: departmentId });
   res.status(200).json({
     message: "Deleted Successfully",

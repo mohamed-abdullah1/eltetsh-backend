@@ -11,6 +11,7 @@ const courseRouter = require("./routes/courses.router");
 const departmentRouter = require("./routes/departments.router");
 const postRouter = require("./routes/posts.router");
 const testRouter = require("./helpers/test.helper");
+const quizRouter = require("./routes/quizes.router");
 //middlewares
 const { errorMiddleware } = require("./middleware/error.middleware");
 
@@ -32,6 +33,7 @@ app.use("/api/nationalId_user/", nationalIdRouter);
 app.use("/api/courses/", courseRouter);
 app.use("/api/departments/", departmentRouter);
 app.use("/api/posts/", postRouter);
+app.use("/api/quiz/", quizRouter);
 
 app.use(errorMiddleware);
 app.use("*", function (_, res) {

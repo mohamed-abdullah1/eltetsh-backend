@@ -86,17 +86,43 @@ const createPost = asyncHandler(async (req, res) => {
 // @route   GET /api/posts
 // @access  PRIVATE
 const getAllPosts = asyncHandler(async (req, res) => {
-  const { filterByCourseId, filterByDepartmentId } = req.query;
+  const { filterByCoursesIds, filterByDepartmentId } = req.query;
+  //filterByCoursesIds
+  if (filterByCoursesIds?.length > 0 && filterByDepartmentId) {
+    const courseExists = await Promise.all(
+      [...filterByCoursesIds].map(async (courseId) => {
+        const courseExists = await Course.findOne({
+          _id: courseId,
+          department: filterByDepartmentId,
+        });
+        return !!courseExists;
+      })
+    );
+    if (courseExists.includes(false)) {
+      res.status(400);
+      throw new Error("Course is not in that department");
+    }
+  }
   const { skip, limit } = req.pagination;
   const searchObjDepart =
-    filterByDepartmentId && filterByCourseId
-      ? { department: filterByDepartmentId, course: filterByCourseId }
+    filterByDepartmentId && filterByCoursesIds?.length > 0
+      ? {
+          department: filterByDepartmentId,
+          $or: [...filterByCoursesIds].map((courseId) => ({
+            course: courseId,
+          })),
+        }
       : filterByDepartmentId
       ? { department: filterByDepartmentId }
-      : filterByCourseId
-      ? { course: filterByCourseId }
+      : filterByCoursesIds
+      ? {
+          $or: [...filterByCoursesIds].map((courseId) => ({
+            course: courseId,
+          })),
+        }
       : {};
   const posts = await Post.find(searchObjDepart)
+    .sort({ createdAt: -1 })
     .populate([
       "author",
       "department",
@@ -128,7 +154,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
       return { ...post?._doc, files: fileData };
     })
   );
-  res.status(200).json({ count: fetchedPosts.length, results: fetchedPosts });
+  res.status(200).json({ count: fetchedPosts?.length, results: fetchedPosts });
 });
 
 // @desc    get a post by id
@@ -219,7 +245,7 @@ const reactPost = asyncHandler(async (req, res) => {
       post.reactions[key].filter((u_id) => {
         const anotherObjectId = new ObjectId(userId);
         return u_id?.equals(anotherObjectId);
-      }).length > 0
+      })?.length > 0
     ) {
       prevReactionType = key;
       return;
