@@ -56,6 +56,13 @@ const courseSchema = new mongoose.Schema({
   min_mark: {
     type: Number,
     required: true,
+    validate: {
+      validator: function (v) {
+        return v < this.max_mark;
+      },
+      message: (props) =>
+        `${props.value} is not a valid , enter marks lower than max_mark`,
+    },
   },
   appointment: appointmentSchema,
   year: {
