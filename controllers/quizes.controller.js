@@ -49,11 +49,17 @@ const makeQuiz = asyncHandler(async (req, res) => {
 
 const submitQuiz = asyncHandler(async (req, res) => {
   const { studentId, quizQuestionId, answers } = req.body;
+  //check if it is a student or not
+  if (req.user.role !== "student") {
+    res.status(400);
+    throw new Error("only students can submit answers for that quiz");
+  }
   //verify the student is the actual one who submit result
   if (!new ObjectId(studentId).equals(req.user._id)) {
     res.status(400);
     throw new Error("you can't submit this quiz for another user");
   }
+
   //check student exists
   const isStudentExists = !!(await User.find({
     _id: studentId,
@@ -63,10 +69,21 @@ const submitQuiz = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("student doesn't exist");
   }
+  //calc result
   const quizQuestions = await QuizQuestions.findById(quizQuestionId);
   if (!quizQuestions) {
     res.status(400);
     throw new Error("quiz questions don't exist");
+  }
+  //check if the user who submit inside that quiz has already enrolled in that course
+  if (
+    req.user.studentCourses.find((c) => c.course === quizQuestions.course) ===
+    undefined
+  ) {
+    res.status(400);
+    throw new Error(
+      "The student must be enrolled to that course so he can submit his answer"
+    );
   }
 
   const calcResults = () => {
