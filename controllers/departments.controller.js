@@ -24,7 +24,17 @@ const createDepartment = asyncHandler(async (req, res) => {
 //@access   Private ADMIN
 const getAllDepartments = asyncHandler(async (req, res) => {
   const { skip, limit } = req.pagination;
-  const docs = await Department.find().skip(skip).limit(limit);
+  //search query
+  let query;
+  if (req.query.search !== undefined) {
+    if (req.query.search != "") {
+      query = { $or: [{ name: { $regex: req.query.search, $options: "i" } }] };
+    }
+  }
+  const docs = await Department.find(query)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
   res.status(200).json({ count: docs.length, data: docs });
 });
 //@desc     GET a department

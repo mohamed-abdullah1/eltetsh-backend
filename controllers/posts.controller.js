@@ -121,7 +121,16 @@ const getAllPosts = asyncHandler(async (req, res) => {
           })),
         }
       : {};
-  const posts = await Post.find(searchObjDepart)
+  //search by content or title
+  let query;
+  if (req.query.searchByTitle !== undefined) {
+    if (req.query.searchByTitle != "") {
+      query = {
+        $or: [{ title: { $regex: req.query.searchByTitle, $options: "i" } }],
+      };
+    }
+  }
+  const posts = await Post.find({ ...searchObjDepart, ...query })
     .sort({ createdAt: -1 })
     .populate([
       "author",

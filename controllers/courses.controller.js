@@ -51,12 +51,29 @@ const createCourse = asyncHandler(async (req, res) => {
 //@route    POST /api/courses/all
 //@access   Private ADMIN
 const getAllCourses = asyncHandler(async (req, res) => {
-  const { filterByDepartment } = req.query;
+  const { filterByDepartment, filterByYear } = req.query;
 
   const { skip, limit } = req.pagination;
-  const courses = await Course.find(
-    filterByDepartment && { department: filterByDepartment }
-  )
+  let query = {};
+
+  // Check if there are search parameters in the query
+  if (req.query.search !== undefined) {
+    // If search query is not empty, modify the query object to include search criteria
+    if (req.query.search !== "") {
+      query = { $or: [{ name: { $regex: req.query.search, $options: "i" } }] };
+    }
+    // Otherwise, return all items without applying any search criteria
+  }
+  const filterObj =
+    filterByDepartment && filterByYear
+      ? { department: filterByDepartment, year: filterByYear }
+      : filterByDepartment
+      ? { department: filterByDepartment }
+      : filterByYear
+      ? { year: filterByYear }
+      : {};
+  const courses = await Course.find({ ...filterObj, ...query })
+    .sort({ createdAt: -1 })
     .populate("department")
     .skip(skip)
     .limit(limit);
