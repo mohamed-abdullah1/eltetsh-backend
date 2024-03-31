@@ -222,7 +222,14 @@ const getUserInfo = asyncHandler(async (req, res) => {
 //@route    POST /api/auth/update
 //@access   PRIVATE
 const updateUserInfo = asyncHandler(async (req, res) => {
-  const { name, department, studentCourses, doctorCourses, year } = req.body;
+  const { name, department, studentCourses, doctorCourses, year, newPassword } =
+    req.body;
+  let salt, hashedPass;
+  if (newPassword !== undefined) {
+    //hash pass
+    salt = await bcrypt.genSalt(10);
+    hashedPass = await bcrypt.hash(password, salt);
+  }
   const userImagesId = uuidv4();
   //!! user image
   let storageRef = ref(storage, `users/${req.user.userImagesId}`);
@@ -250,6 +257,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
       doctorCourses,
       year,
       userImagesId: req.file ? userImagesId : req.user.userImagesId,
+      password: hashedPass,
     },
     { new: true, runValidators: true }
   );
@@ -258,6 +266,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
     "studentCourses.course",
     "doctorCourses.course",
   ]);
+  const { password, ...withoutPassUser } = { ...completeUpdatedUser?._doc };
   if (!updatedUser) {
     return res.status(404).json({ message: "User not found" });
   }
@@ -280,7 +289,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
     // Grab the public url
     const downloadURL = await getDownloadURL(snapshot.ref);
     return res.status(200).json({
-      ...completeUpdatedUser?._doc,
+      ...withoutPassUser,
       user_image: {
         name: req.file.originalname,
         type: req.file.mimetype,
@@ -290,7 +299,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    ...completeUpdatedUser?._doc,
+    ...withoutPassUser,
     user_image: {
       ...fileData[0],
     },
