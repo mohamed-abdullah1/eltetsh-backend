@@ -6,7 +6,6 @@ const colors = require("colors");
 
 //routes
 const usersRouter = require("./routes/users.router");
-const nationalIdRouter = require("./routes/nationalId_user.router");
 const courseRouter = require("./routes/courses.router");
 const departmentRouter = require("./routes/departments.router");
 const postRouter = require("./routes/posts.router");
@@ -29,7 +28,6 @@ app.use(paginationMiddleware);
 connectDB();
 app.use("/", testRouter);
 app.use("/api/auth/", usersRouter);
-app.use("/api/nationalId_user/", nationalIdRouter);
 app.use("/api/courses/", courseRouter);
 app.use("/api/departments/", departmentRouter);
 app.use("/api/posts/", postRouter);

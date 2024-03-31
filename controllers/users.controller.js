@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/users.model");
 const genJwt = require("../helpers/genJwt.helper");
-const NationalId_User = require("../models/nationalId_user.model");
 const Course = require("../models/courses.model");
 const { v4: uuidv4 } = require("uuid");
 
@@ -64,26 +63,6 @@ const registerUser = asyncHandler(async (req, res) => {
   if (exists) {
     res.status(400);
     throw new Error("User is already exist");
-  }
-  //check if the national_id of this user is in the db or not
-  const nationalIdUser = await NationalId_User.findOne({ nationalId });
-  const isExistNationalId = !!nationalIdUser;
-  if (!isExistNationalId) {
-    res.status(400);
-    throw new Error("This user's NationalId isn't allowed to register");
-  }
-  //change the NationalIds_user and sign it with registerInSystem :true
-  await NationalId_User.updateOne(
-    { nationalId },
-    { $set: { registeredInSystem: true } },
-    { runValidators: true, new: true }
-  );
-  //check if the role in req equals the role in nationalIdUsers
-  if (nationalIdUser?.role !== role) {
-    res.status(400);
-    throw new Error(
-      "The role you enter doesn't match the role associated to the nationalId"
-    );
   }
 
   //hash pass
