@@ -5,6 +5,7 @@ const {
   getStudentsResultsForAQuiz,
   getOneStudentResultsForManyQuiz,
   changeAppearanceQuizResults,
+  getSingleQuizQuestion,
 } = require("../controllers/quizes.controller");
 const {
   verifyToken,
@@ -24,4 +25,5 @@ router.post(
   verifyDoctorOrAdmin,
   changeAppearanceQuizResults
 );
+router.get("/questions/:quizId", verifyToken, getSingleQuizQuestion);
 module.exports = router;

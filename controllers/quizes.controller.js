@@ -167,10 +167,47 @@ const changeAppearanceQuizResults = asyncHandler(async (req, res) => {
     data: quizResults,
   });
 });
+const getSingleQuizQuestion = asyncHandler(async (req, res) => {
+  const { quizId } = req.params;
+  const quizQuestion = await QuizQuestions.findById(quizId);
+  if (!quizQuestion) {
+    res.status(400);
+    throw new Error("quiz question doesn't exist");
+  }
+  //who can access it ?
+  //student who enrolled to the same course
+  //doctor who made the quiz
+  //admin
+  if (req.user.role === "admin") {
+    return res.status(200).json({ data: quizQuestion });
+  }
+  if (
+    req.user.role === "student" &&
+    req.user.studentCourses.find((c) => c.course === quizQuestion.course) ===
+      undefined
+  ) {
+    res.status(400);
+    throw new Error(
+      "The student must be enrolled to that course so he can submit his answer"
+    );
+  }
+  if (
+    req.user.role === "doctor" &&
+    !new ObjectId(req.user._id).equals(quizQuestion.doctorId)
+  ) {
+    res.status(400);
+    throw new Error(
+      "you can't get questions, only doctor who make the quiz can access it"
+    );
+  }
+
+  res.status(200).json({ data: quizQuestion });
+});
 module.exports = {
   makeQuiz,
   submitQuiz,
   getStudentsResultsForAQuiz,
   getOneStudentResultsForManyQuiz,
   changeAppearanceQuizResults,
+  getSingleQuizQuestion,
 };
