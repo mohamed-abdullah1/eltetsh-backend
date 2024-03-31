@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/users.model");
+const Post = require("../models/posts.model");
 const genJwt = require("../helpers/genJwt.helper");
 const Course = require("../models/courses.model");
 const { v4: uuidv4 } = require("uuid");
@@ -14,6 +15,7 @@ const {
 } = require("firebase/storage");
 const config = require("../config/firebase.config");
 const { getMetadata, list } = require("firebase/storage");
+const { QuizQuestions, QuizResults } = require("../models/quizes.model");
 // Initialize a firebase application
 initializeApp(config);
 // Initialize Cloud Storage and get a reference to the service
@@ -38,6 +40,11 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!name || !password || !email || !nationalId || !role) {
     res.status(400);
     throw new Error("please complete all fields");
+  }
+  //check year is there or not
+  if (role === "student" && year === undefined) {
+    res.status(400);
+    throw new Error("add year for that student");
   }
   //!CHECK IF THE COURSE AND DEPARTMENT ENTERED BY THE USER ARE CONVIENENT
   const courseExists = await Promise.all(
@@ -285,9 +292,92 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   });
 });
 
+const deleteUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+  if (user.role === "doctor") {
+    await Post.deleteMany({ author: user._id });
+    const quizQuestions = await QuizQuestions.find({ doctorId: user._id });
+    quizQuestions.forEach(async (q) => {
+      await QuizResults.deleteMany({ quizQuestionId: q._id });
+    });
+    await QuizQuestions.deleteMany({ doctorId: user._id });
+  }
+  if (user.role === "student") {
+    await QuizResults.deleteMany({ studentId: user._id });
+  }
+  await User.deleteOne({ _id: req.params.id });
+  res.json({ message: "User removed" });
+});
+
+const getAllUsers = asyncHandler(async (req, res) => {
+  const { skip, limit } = req.pagination;
+  const {
+    filterByCoursesIds,
+    filterByDepartmentId,
+    filterByYear,
+    filterByRole,
+  } = req.query;
+  const searchObjDepartCourses =
+    filterByDepartmentId && filterByCoursesIds?.length > 0
+      ? {
+          department: filterByDepartmentId,
+          $or: [...filterByCoursesIds].map((courseId) => ({
+            course: courseId,
+          })),
+        }
+      : filterByDepartmentId
+      ? { department: filterByDepartmentId }
+      : filterByCoursesIds
+      ? {
+          $or: [...filterByCoursesIds].map((courseId) => ({
+            course: courseId,
+          })),
+        }
+      : {};
+
+  //search by content or title
+
+  let query;
+  if (req.query.search !== undefined) {
+    if (req.query.search != "") {
+      query = {
+        $or: [{ name: { $regex: req.query.search, $options: "i" } }],
+      };
+    }
+  }
+  const yearAndRole =
+    filterByYear && filterByRole
+      ? { year: filterByYear, role: filterByRole }
+      : filterByYear
+      ? { year: filterByYear }
+      : filterByRole
+      ? { role: filterByRole }
+      : {};
+  console.log({
+    ...query,
+    ...searchObjDepartCourses,
+    ...yearAndRole,
+  });
+  const users = await User.find({
+    ...query,
+    ...searchObjDepartCourses,
+    ...yearAndRole,
+  })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  res.status(200).json({ count: users.length, data: users });
+});
+
 module.exports = {
   registerUser,
   loginUser,
   getUserInfo,
   updateUserInfo,
+  deleteUser,
+  getAllUsers,
 };

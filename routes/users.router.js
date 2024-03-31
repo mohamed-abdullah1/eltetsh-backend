@@ -3,6 +3,8 @@ const {
   loginUser,
   getUserInfo,
   updateUserInfo,
+  deleteUser,
+  getAllUsers,
 } = require("../controllers/users.controller");
 const {
   verifyAdmin,
@@ -18,6 +20,9 @@ router
   .post(verifyAdmin, upload.single("user_image"), registerUser);
 router.route("/login").post(loginUser);
 router.route("/me").get(verifyToken, getUserInfo);
+router.delete("/deleteUser/:id", verifyAdmin, deleteUser);
+router.get("/all_users", verifyAdmin, getAllUsers);
+
 router
   .route("/update/:id")
   .put(verifyToken, isUserOrAdmin, upload.single("user_image"), updateUserInfo);
