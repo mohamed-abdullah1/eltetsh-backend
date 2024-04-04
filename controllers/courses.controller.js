@@ -51,9 +51,11 @@ const createCourse = asyncHandler(async (req, res) => {
 //@route    POST /api/courses/all
 //@access   Private ADMIN
 const getAllCourses = asyncHandler(async (req, res) => {
-  const { filterByDepartment, filterByYear } = req.query;
+  const { filterByDepartment, filterByYear, filterByDay } = req.query;
 
   const { skip, limit } = req.pagination;
+  //filter by date
+
   let query = {};
 
   // Check if there are search parameters in the query

@@ -289,6 +289,41 @@ const reactPost = asyncHandler(async (req, res) => {
   res.status(200).json(completePost);
 });
 
+const makeComment = asyncHandler(async (req, res) => {
+  const newComment = {
+    author: req.user._id,
+    content: req.body.content,
+  };
+  const newPost = await Post.findOneAndUpdate(
+    { _id: req.params.postId },
+    { $push: { comments: newComment } },
+    { new: true, runValidators: true }
+  );
+  res
+    .status(200)
+    .json({ message: "comment added successfully", post: newPost });
+});
+const deleteComment = asyncHandler(async (req, res) => {
+  const { postId, commentId } = req.params;
+  const post = await Post.findById(postId);
+  const comment = post.comments.find((c) =>
+    new ObjectId(commentId).equals(c._id)
+  );
+  //check post owner or admin or comment owner
+  if (
+    !new ObjectId(post.author).equals(req.user._id) &&
+    !new ObjectId(comment.author).equals(req.user._id) &&
+    req.user.role !== "admin"
+  ) {
+    res.status(400);
+    throw new Error("You aren't allowed to delete this comment");
+  }
+  const newPost = await Post.findOneAndDelete(
+    { _id: postId },
+    { $pull: { comments: comment } }
+  );
+  res.status(200).json({ message: "deleted successfully", post: newPost });
+});
 module.exports = {
   createPost,
   getAllPosts,
@@ -296,4 +331,6 @@ module.exports = {
   updatePost,
   deletePost,
   reactPost,
+  makeComment,
+  deleteComment,
 };

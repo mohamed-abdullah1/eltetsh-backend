@@ -1,7 +1,6 @@
 // Import necessary modules
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-const { QuizResults } = require("../models/quizes.model");
+const Post = require("../models/posts.model");
 
 // Define the migration function
 (async () => {
@@ -11,10 +10,7 @@ const { QuizResults } = require("../models/quizes.model");
   );
   // Add new field to User model
   try {
-    await QuizResults.updateMany(
-      {},
-      { $set: { allowStudentToSeeResult: false } }
-    );
+    await Post.updateMany({}, { $set: { comments: [] } });
     console.log("Migration successful");
   } catch (error) {
     console.error("Migration failed:", error);

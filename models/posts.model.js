@@ -1,5 +1,16 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
+//build comment schema
+//contains content , author , post
+//fix user year must be convenient to the courses year
+
+const CommentSchema = new mongoose.Schema(
+  {
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
+    content: { type: String, required: [true, "Comment content is required"] },
+  },
+  { timestamps: true }
+);
 const postSchema = new mongoose.Schema(
   {
     postFilesId: {
@@ -35,6 +46,7 @@ const postSchema = new mongoose.Schema(
       love: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }, ,],
       angry: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
     },
+    comments: [CommentSchema],
   },
   {
     timestamps: true,

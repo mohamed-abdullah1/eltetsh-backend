@@ -37,9 +37,14 @@ const courseSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
+    unique: [true, "Course Code must be unique"],
   },
   name: {
     type: String,
+    required: true,
+  },
+  min_mark: {
+    type: Number,
     required: true,
   },
   max_mark: {
@@ -47,23 +52,13 @@ const courseSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function (v) {
-        return v > this.min_mark;
+        return v > this.get("min_mark");
       },
       message: (props) =>
         `${props.value} is not a valid , enter marks higher than min_mark`,
     },
   },
-  min_mark: {
-    type: Number,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return v < this.max_mark;
-      },
-      message: (props) =>
-        `${props.value} is not a valid , enter marks lower than max_mark`,
-    },
-  },
+
   appointment: appointmentSchema,
   year: {
     type: String,

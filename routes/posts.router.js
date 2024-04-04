@@ -6,6 +6,8 @@ const {
   updatePost,
   deletePost,
   reactPost,
+  makeComment,
+  deleteComment,
 } = require("../controllers/posts.controller");
 const multer = require("multer");
 const { verifyDoctor, verifyToken } = require("../middleware/auth.middleware");
@@ -20,5 +22,7 @@ router
   .get(verifyToken, getPostById)
   .put(verifyDoctor, updatePost)
   .delete(verifyDoctor, deletePost);
+router.put("/add-comment/:postId", verifyToken, makeComment);
+router.put("/delete-comment/:postId/:commentId", verifyToken, deleteComment);
 router.route("/react/:id").put(verifyToken, reactPost);
 module.exports = router;
