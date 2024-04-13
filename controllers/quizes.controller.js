@@ -306,6 +306,7 @@ const updateQuizQuestion = asyncHandler(async (req, res) => {
     throw new Error("quiz doesn't exist");
   }
   //check if the user is the doctor who made the quiz or the user is the admin
+  console.log("$$$$$$$", req.user, quiz.doctorId);
   if (
     !new ObjectId(req.user._id).equals(quiz.doctorId) ||
     req.role === "admin"
@@ -315,21 +316,25 @@ const updateQuizQuestion = asyncHandler(async (req, res) => {
       "you can't update questions, only doctor who make the quiz can access it"
     );
   }
-  const isCourseExists = !!(await Course.findById(course));
-  if (!isCourseExists) {
-    res.status(400);
-    throw new Error("course doesn't exist");
+  if (course) {
+    const isCourseExists = !!(await Course.findById(course));
+    if (!isCourseExists) {
+      res.status(400);
+      throw new Error("course doesn't exist");
+    }
   }
   //check department exists
-  const isDepartmentExists = !!(await Department.findById(department));
-  if (!isDepartmentExists) {
-    res.status(400);
-    throw new Error("department doesn't exist");
+  if (department) {
+    const isDepartmentExists = !!(await Department.findById(department));
+    if (!isDepartmentExists) {
+      res.status(400);
+      throw new Error("department doesn't exist");
+    }
   }
   //check department and course match
   const isDepartmentAndCourseMatch = !!(await Course.findOne({
-    _id: course,
-    department,
+    _id: course ? course : quiz.course,
+    department: department ? department : quiz.department,
   }));
   if (!isDepartmentAndCourseMatch) {
     res.status(400);

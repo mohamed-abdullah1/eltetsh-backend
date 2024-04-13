@@ -32,6 +32,6 @@ router
   .route("/questions/:quizId")
   .get(verifyToken, getSingleQuizQuestion)
   .delete(verifyToken, deleteQuizQuestion)
-  .put(verifyToken, updateQuizQuestion);
+  .put(verifyDoctor, updateQuizQuestion);
 router.get("/quizes/:doctorId", verifyToken, getQuizesForADoctor);
 module.exports = router;
