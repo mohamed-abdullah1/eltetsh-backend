@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 // Schema for quiz questions
 const QuizQuestionsSchema = new mongoose.Schema({
+  quizTitle: {
+    type: String,
+    required: [true, "quiz title is required !"],
+  },
   department: {
     type: mongoose.SchemaTypes.ObjectId,
     ref: "Department",
@@ -56,7 +60,17 @@ const QuizResultSchema = new mongoose.Schema({
   result: Number,
   allowStudentToSeeResult: { type: Boolean, default: false },
 });
+// Adding virtual properties to include course and department
+QuizResultSchema.virtual("courseAndDepartment").get(async function () {
+  const quizQuestion = await this.populate("quizQuestionId");
+  const course = quizQuestion.quizQuestionId.course;
+  const department = quizQuestion.quizQuestionId.department;
 
+  return {
+    course,
+    department,
+  };
+});
 const QuizQuestions = mongoose.model("QuizQuestion", QuizQuestionsSchema);
 const QuizResults = mongoose.model("QuizResult", QuizResultSchema);
 

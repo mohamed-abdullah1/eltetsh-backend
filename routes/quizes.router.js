@@ -6,6 +6,9 @@ const {
   getOneStudentResultsForManyQuiz,
   changeAppearanceQuizResults,
   getSingleQuizQuestion,
+  deleteQuizQuestion,
+  updateQuizQuestion,
+  getQuizesForADoctor,
 } = require("../controllers/quizes.controller");
 const {
   verifyToken,
@@ -25,5 +28,10 @@ router.post(
   verifyDoctorOrAdmin,
   changeAppearanceQuizResults
 );
-router.get("/questions/:quizId", verifyToken, getSingleQuizQuestion);
+router
+  .route("/questions/:quizId")
+  .get(verifyToken, getSingleQuizQuestion)
+  .delete(verifyToken, deleteQuizQuestion)
+  .put(verifyToken, updateQuizQuestion);
+router.get("/quizes/:doctorId", verifyToken, getQuizesForADoctor);
 module.exports = router;

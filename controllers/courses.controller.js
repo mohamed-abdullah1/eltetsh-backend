@@ -159,7 +159,6 @@ const updateCourse = asyncHandler(async (req, res) => {
       throw new Error("this appointment is already taken");
     }
   }
-
   // Update the item in the database
   const updatedItem = await Course.findByIdAndUpdate(
     itemId,

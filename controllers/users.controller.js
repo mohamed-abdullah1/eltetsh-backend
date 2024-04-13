@@ -52,6 +52,15 @@ const registerUser = asyncHandler(async (req, res) => {
       return !!(await Course.findOne({ _id: item.course, department }));
     })
   );
+  //check if the course 's year same as the entered year
+  if (role === "student") {
+    const studentAcceptedCourses = await Promise.all([
+      ...studentCourses.filter(async (sCourse) => {
+        const c = await Course.findOneById(sCourse.course);
+        return c?.year === year;
+      }),
+    ]);
+  }
   if (courseExists.includes(false)) {
     res.status(400);
     throw new Error("Course is not in that department");
@@ -76,6 +85,8 @@ const registerUser = asyncHandler(async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);
   const userImagesId = uuidv4();
+
+  //check course year same as the student year
 
   //create user
   const newUserData =
@@ -235,9 +246,9 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   const updatedUser = await User.findOneAndUpdate(
     { _id: req.params.id },
     {
+      studentCourses,
       name,
       department,
-      studentCourses,
       doctorCourses,
       year,
       userImagesId: req.file ? userImagesId : req.user.userImagesId,
