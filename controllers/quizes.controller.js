@@ -6,7 +6,20 @@ const Course = require("../models/courses.model");
 const Department = require("../models/departments.model");
 const User = require("../models/users.model");
 const makeQuiz = asyncHandler(async (req, res) => {
-  const { department, course, doctorId, questions, quizTitle } = req.body;
+  const { department, course, doctorId, questions, quizTitle, quizTime } =
+    req.body;
+  //check all items in the body
+  if (
+    !department ||
+    !course ||
+    !doctorId ||
+    !questions ||
+    !quizTitle ||
+    !quizTime
+  ) {
+    res.status(400);
+    throw new Error("please complete all fields");
+  }
   //check course exists
   const isCourseExists = !!(await Course.findById(course));
   if (!isCourseExists) {
@@ -44,6 +57,7 @@ const makeQuiz = asyncHandler(async (req, res) => {
     doctorId,
     questions,
     quizTitle,
+    quizTime,
   });
   res.status(201).json({ message: "created successfully", data: quiz });
 });
@@ -355,6 +369,42 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
   const quizes = await QuizQuestions.find({ doctorId });
   res.status(200).json({ count: quizes.length, data: quizes });
 });
+const getQuizesForAStudent = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+  const user = await User.findById(studentId);
+  if (!user) {
+    res.status(400);
+    throw new Error("user doesn't exist");
+  }
+  //get quizes according to the studentCourses
+  const studentCourses = user.studentCourses;
+  const quizes = await Promise.all(
+    studentCourses?.map(async (s) => {
+      //check if the student have submit a result or not
+      const questions = [
+        ...(await QuizQuestions.find({ course: s.course }).populate("course")),
+      ];
+      const results = await QuizResults.find({
+        studentId,
+        quizQuestionId: { $in: questions.map((q) => q._id) },
+      }).populate("quizQuestionId");
+      console.log({ qqqq: questions.map((q) => q._id) });
+      return questions.filter((q) => {
+        console.log({
+          xxxx: results.map((r) => r.quizQuestionId._id.toString()),
+        });
+        return !results
+          .map((r) => r.quizQuestionId._id.toString())
+          .includes(q._id.toString());
+      });
+    })
+  );
+  let data;
+  console.log({ quizes });
+  res
+    .status(200)
+    .json({ count: [].concat(...quizes).length, data: [].concat(...quizes) });
+});
 module.exports = {
   makeQuiz,
   submitQuiz,
@@ -365,4 +415,5 @@ module.exports = {
   deleteQuizQuestion,
   updateQuizQuestion,
   getQuizesForADoctor,
+  getQuizesForAStudent,
 };

@@ -37,6 +37,10 @@ const QuizQuestionsSchema = new mongoose.Schema({
       },
     },
   ],
+  quizTime: {
+    type: Number,
+    require: [true, "quiz time required"],
+  },
 });
 
 // Schema for quiz results

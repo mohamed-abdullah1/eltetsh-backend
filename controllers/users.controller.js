@@ -46,20 +46,22 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("add year for that student");
   }
+
   //!CHECK IF THE COURSE AND DEPARTMENT ENTERED BY THE USER ARE CONVIENENT
   const courseExists = await Promise.all(
     [...studentCourses, ...doctorCourses].map(async (item) => {
       return !!(await Course.findOne({ _id: item.course, department }));
     })
   );
-  //check if the course 's year same as the entered year
+  //check of all the studentCourses are at the same year
   if (role === "student") {
-    const studentAcceptedCourses = await Promise.all([
-      ...studentCourses.filter(async (sCourse) => {
-        const c = await Course.findOneById(sCourse.course);
-        return c?.year === year;
-      }),
-    ]);
+    studentCourses.forEach(async (sCourse) => {
+      const c = await Course.findOne({ _id: sCourse.course, year: year });
+      if (c) {
+        res.status(400);
+        throw new Error("course is not in the year of this student");
+      }
+    });
   }
   if (courseExists.includes(false)) {
     res.status(400);
@@ -224,6 +226,19 @@ const updateUserInfo = asyncHandler(async (req, res) => {
     //hash pass
     salt = await bcrypt.genSalt(10);
     hashedPass = await bcrypt.hash(password, salt);
+  }
+  //check of all the studentCourses are at the same year
+  if (req.user.role === "student") {
+    studentCourses.forEach(async (sCourse) => {
+      const c = await Course.findOne({
+        _id: sCourse.course,
+        year: year ? year : req.user.year,
+      });
+      if (!c) {
+        res.status(400);
+        throw new Error("course is not in the year of this student");
+      }
+    });
   }
   const userImagesId = uuidv4();
   //!! user image

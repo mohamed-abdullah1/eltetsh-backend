@@ -9,6 +9,7 @@ const {
   deleteQuizQuestion,
   updateQuizQuestion,
   getQuizesForADoctor,
+  getQuizesForAStudent,
 } = require("../controllers/quizes.controller");
 const {
   verifyToken,
@@ -34,4 +35,5 @@ router
   .delete(verifyToken, deleteQuizQuestion)
   .put(verifyDoctor, updateQuizQuestion);
 router.get("/quizes/:doctorId", verifyToken, getQuizesForADoctor);
+router.get("/quizes/student/:studentId", verifyToken, getQuizesForAStudent);
 module.exports = router;
