@@ -11,6 +11,7 @@ const departmentRouter = require("./routes/departments.router");
 const postRouter = require("./routes/posts.router");
 const testRouter = require("./helpers/test.helper");
 const quizRouter = require("./routes/quizes.router");
+const semesterScheduleRouter = require("./routes/semesterSchedule.router");
 //middlewares
 const { errorMiddleware } = require("./middleware/error.middleware");
 
@@ -32,6 +33,7 @@ app.use("/api/courses/", courseRouter);
 app.use("/api/departments/", departmentRouter);
 app.use("/api/posts/", postRouter);
 app.use("/api/quiz/", quizRouter);
+app.use("/api/semester-schedule/", semesterScheduleRouter);
 
 app.use(errorMiddleware);
 app.use("*", function (_, res) {
@@ -43,4 +45,3 @@ const port = process.env.PORT || 2000;
 app.listen(port, () =>
   console.log(`SERVER IS RUNNING ON PORT ${port}`.bgMagenta)
 );
-
