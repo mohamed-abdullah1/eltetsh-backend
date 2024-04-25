@@ -12,11 +12,6 @@ const SemesterScheduleSchema = new mongoose.Schema(
       type: String,
       enum: ["1st", "2nd", "3th", "4th", "5th"],
     },
-    semester: {
-      type: String,
-      enum: ["1st", "2nd"],
-      require: [true, "semester required"],
-    },
     scheduleUrl: {
       type: String,
     },
