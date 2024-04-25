@@ -7,7 +7,6 @@ const SemesterScheduleSchema = new mongoose.Schema(
       ref: "Department",
       require: [true, "department required"],
     },
-
     year: {
       type: String,
       enum: ["1st", "2nd", "3th", "4th", "5th"],

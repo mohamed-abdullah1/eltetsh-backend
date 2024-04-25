@@ -57,7 +57,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (role === "student") {
     studentCourses.forEach(async (sCourse) => {
       const c = await Course.findOne({ _id: sCourse.course, year: year });
-      if (c) {
+      if (!c) {
         res.status(400);
         throw new Error("course is not in the year of this student");
       }
