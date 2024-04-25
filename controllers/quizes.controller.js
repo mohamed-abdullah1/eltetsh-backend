@@ -285,8 +285,20 @@ const getSingleQuizQuestion = asyncHandler(async (req, res) => {
       "you can't get questions, only doctor who make the quiz can access it"
     );
   }
-
-  res.status(200).json({ data: quizQuestion });
+  const data =
+    req.user.role === "student"
+      ? {
+          ...quizQuestion.toObject(),
+          questions: quizQuestion.toObject().questions.map((q) => {
+            const newQOptions = q.options.map((option) => {
+              const { isCorrect, ...restObj } = option;
+              return restObj;
+            });
+            return { ...q, options: newQOptions };
+          }),
+        }
+      : quizQuestion;
+  res.status(200).json({ data });
 });
 const deleteQuizQuestion = asyncHandler(async (req, res) => {
   const { quizId } = req.params;
