@@ -69,9 +69,16 @@ const getSemesterSchedule = asyncHandler(async (req, res) => {
 const getAllSemesterSchedule = asyncHandler(async (req, res) => {
   const { skip, limit } = req.pagination;
   //filter by year
-  const { year } = req.query;
+  const { year, department } = req.query;
 
-  const query = year ? { year } : {};
+  const query =
+    year && department
+      ? { year, department }
+      : year
+      ? { year }
+      : department
+      ? { department }
+      : {};
   const semesterSchedules = await SemesterSchedule.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)

@@ -6,8 +6,15 @@ const Course = require("../models/courses.model");
 const Department = require("../models/departments.model");
 const User = require("../models/users.model");
 const makeQuiz = asyncHandler(async (req, res) => {
-  const { department, course, doctorId, questions, quizTitle, quizTime } =
-    req.body;
+  const {
+    department,
+    course,
+    doctorId,
+    questions,
+    quizTitle,
+    quizTime,
+    allowAppearanceQuizQuestions,
+  } = req.body;
   //check all items in the body
   if (
     !department ||
@@ -58,6 +65,7 @@ const makeQuiz = asyncHandler(async (req, res) => {
     questions,
     quizTitle,
     quizTime,
+    allowAppearanceQuizQuestions,
   });
   res.status(201).json({ message: "created successfully", data: quiz });
 });
@@ -197,7 +205,7 @@ const getOneStudentResultsForManyQuiz = asyncHandler(async (req, res) => {
       : {};
   const studentQuizzes = await QuizResults.find({
     studentId,
-    // allowStudentToSeeResult: true,
+    allowStudentToSeeResult: true,
   }).populate([
     {
       path: "quizQuestionId",
@@ -257,6 +265,11 @@ const getSingleQuizQuestion = asyncHandler(async (req, res) => {
   if (!quizQuestion) {
     res.status(400);
     throw new Error("quiz question doesn't exist");
+  }
+  if (!quizQuestion?.allowAppearanceQuizQuestions) {
+    return res
+      .status(400)
+      .json({ message: "This quiz questions isn't allowed to be seen" });
   }
   //who can access it ?
   //student who enrolled to the same course
@@ -325,7 +338,13 @@ const deleteQuizQuestion = asyncHandler(async (req, res) => {
 });
 const updateQuizQuestion = asyncHandler(async (req, res) => {
   const { quizId } = req.params;
-  const { quizTitle, department, course, questions } = req.body;
+  const {
+    quizTitle,
+    department,
+    course,
+    questions,
+    allowAppearanceQuizQuestions,
+  } = req.body;
   const quiz = await QuizQuestions.findById(quizId);
   if (!quiz) {
     res.status(400);
@@ -369,7 +388,7 @@ const updateQuizQuestion = asyncHandler(async (req, res) => {
   //update the questions and all its results
   const quizQuestions = await QuizQuestions.findOneAndUpdate(
     { _id: quizId },
-    { quizTitle, department, course, questions },
+    { quizTitle, department, course, questions, allowAppearanceQuizQuestions },
     { new: true, runValidators: true }
   );
   res
@@ -378,12 +397,19 @@ const updateQuizQuestion = asyncHandler(async (req, res) => {
 });
 const getQuizesForADoctor = asyncHandler(async (req, res) => {
   const { doctorId } = req.params;
-  const quizes = await QuizQuestions.find({ doctorId });
+  const quizes = await QuizQuestions.find({ doctorId }).populate([
+    "course",
+    "department",
+    "doctorId",
+  ]);
   res.status(200).json({ count: quizes.length, data: quizes });
 });
 const getQuizesForAStudent = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
-  const user = await User.findById(studentId);
+  const user = await User.find({
+    _id: studentId,
+    allowAppearanceQuizQuestions: true,
+  });
   if (!user) {
     res.status(400);
     throw new Error("user doesn't exist");

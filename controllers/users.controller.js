@@ -373,6 +373,33 @@ const getAllUsers = asyncHandler(async (req, res) => {
       };
     }
   }
+  if (req.query.searchByNationalId !== undefined) {
+    if (req.query.searchByNationalId != "") {
+      query =
+        req.query.search !== undefined
+          ? {
+              $or: [
+                query.$or[0],
+                {
+                  nationalId: {
+                    $regex: req.query.searchByNationalId,
+                    $options: "i",
+                  },
+                },
+              ],
+            }
+          : {
+              $or: [
+                {
+                  nationalId: {
+                    $regex: req.query.searchByNationalId,
+                    $options: "i",
+                  },
+                },
+              ],
+            };
+    }
+  }
   const yearAndRole =
     filterByYear && filterByRole
       ? { year: filterByYear, role: filterByRole }

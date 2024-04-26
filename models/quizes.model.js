@@ -41,6 +41,10 @@ const QuizQuestionsSchema = new mongoose.Schema({
     type: Number,
     require: [true, "quiz time required"],
   },
+  allowAppearanceQuizQuestions: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Schema for quiz results
