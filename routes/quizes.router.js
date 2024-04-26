@@ -33,7 +33,7 @@ router
   .route("/questions/:quizId")
   .get(verifyToken, getSingleQuizQuestion)
   .delete(verifyToken, deleteQuizQuestion)
-  .put(verifyDoctor, updateQuizQuestion);
+  .put(verifyDoctorOrAdmin, updateQuizQuestion);
 router.get("/quizes/:doctorId", verifyToken, getQuizesForADoctor);
 router.get("/quizes/student/:studentId", verifyToken, getQuizesForAStudent);
 module.exports = router;

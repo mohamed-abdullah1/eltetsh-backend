@@ -132,17 +132,20 @@ const submitQuiz = asyncHandler(async (req, res) => {
     return score;
   };
   //create quiz
-  const quiz = await QuizResults.create({
+  const _ = await QuizResults.create({
     studentId,
     quizQuestionId,
     answers,
     result: calcResults(),
   });
-  res.status(201).json({ message: "submitted successfully", data: quiz });
+  res.status(201).json({ message: "submitted successfully" });
 });
 const getStudentsResultsForAQuiz = asyncHandler(async (req, res) => {
   const quizQuestions = await QuizQuestions.findById(req.params.quizId);
-  if (!new ObjectId(req.user._id).equals(quizQuestions.doctorId)) {
+  if (
+    !new ObjectId(req.user._id).equals(quizQuestions.doctorId) &&
+    !["admin", "doctor"].includes(req.user.role)
+  ) {
     res.status(400);
     throw new Error(
       "you can't get results, only doctor who make the quiz can access it"
@@ -226,7 +229,7 @@ const getOneStudentResultsForManyQuiz = asyncHandler(async (req, res) => {
   res.status(200).json({ count: data.length, data });
 });
 const changeAppearanceQuizResults = asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
+  const { quizId: quizQuestionId } = req.params;
   const { allowStudentToSeeResult } = req.body;
   //check body has all attrs
   if (!("allowStudentToSeeResult" in req.body)) {
@@ -234,14 +237,12 @@ const changeAppearanceQuizResults = asyncHandler(async (req, res) => {
     throw new Error("allowStudentToSeeResult is missing");
   }
   //check if the doctor who made the quiz can access it
-  const quizQuestions = await QuizResults.findById(quizId).populate(
-    "quizQuestionId"
-  );
+  const quizQuestion = await QuizQuestions.findById(quizQuestionId);
+  console.log("👉🔥 ", { quizQuestion, quizQuestionId });
 
   if (
-    !new ObjectId(req.user._id).equals(
-      quizQuestions.quizQuestionId.doctorId || req.user.role !== "admin"
-    )
+    !new ObjectId(req.user._id).equals(quizQuestion.doctorId) &&
+    !["admin", "doctor"].includes(req.user.role)
   ) {
     res.status(400);
     throw new Error(
@@ -249,14 +250,14 @@ const changeAppearanceQuizResults = asyncHandler(async (req, res) => {
     );
   }
 
-  const quizResults = await QuizResults.findOneAndUpdate(
-    { _id: quizId },
-    { allowStudentToSeeResult },
-    { new: true }
+  await QuizResults.updateMany(
+    { quizQuestionId: quizQuestionId },
+    {
+      allowStudentToSeeResult,
+    }
   );
   res.status(200).json({
     message: "updated successfully",
-    data: quizResults,
   });
 });
 const getSingleQuizQuestion = asyncHandler(async (req, res) => {
@@ -351,14 +352,20 @@ const updateQuizQuestion = asyncHandler(async (req, res) => {
     throw new Error("quiz doesn't exist");
   }
   //check if the user is the doctor who made the quiz or the user is the admin
-  console.log("$$$$$$$", req.user, quiz.doctorId);
+  console.log(
+    "$$$$$$$",
+    req.user,
+    quiz.doctorId,
+    !new ObjectId(req.user._id).equals(quiz.doctorId) &&
+      !["admin", "doctor"].includes(req.user.role)
+  );
   if (
-    !new ObjectId(req.user._id).equals(quiz.doctorId) ||
-    req.role === "admin"
+    !new ObjectId(req.user._id).equals(quiz.doctorId) &&
+    !["admin", "doctor"].includes(req.user.role)
   ) {
     res.status(400);
     throw new Error(
-      "you can't update questions, only doctor who make the quiz can access it"
+      "you can't update questions, only doctor or admin who make the quiz can access it"
     );
   }
   if (course) {
@@ -406,21 +413,25 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
 });
 const getQuizesForAStudent = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
-  const user = await User.find({
+  const user = await User.findOne({
     _id: studentId,
-    allowAppearanceQuizQuestions: true,
   });
   if (!user) {
     res.status(400);
     throw new Error("user doesn't exist");
   }
   //get quizes according to the studentCourses
+
   const studentCourses = user.studentCourses;
+  console.log("👉🔥 ", { user });
   const quizes = await Promise.all(
     studentCourses?.map(async (s) => {
       //check if the student have submit a result or not
       const questions = [
-        ...(await QuizQuestions.find({ course: s.course }).populate("course")),
+        ...(await QuizQuestions.find({
+          course: s.course,
+          allowAppearanceQuizQuestions: true,
+        }).populate("course")),
       ];
       const results = await QuizResults.find({
         studentId,
@@ -437,8 +448,7 @@ const getQuizesForAStudent = asyncHandler(async (req, res) => {
       });
     })
   );
-  let data;
-  console.log({ quizes });
+
   res
     .status(200)
     .json({ count: [].concat(...quizes).length, data: [].concat(...quizes) });
