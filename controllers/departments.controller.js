@@ -8,12 +8,12 @@ const User = require("../models/users.model");
 //@route    POST /api/departments/create
 //@access   Private ADMIN
 const createDepartment = asyncHandler(async (req, res) => {
-  const { name, info } = req.body;
+  const { name, info, roles, jobs } = req.body;
   if (!name || !info) {
     res.status(400);
     throw new Error("Complete all fields");
   }
-  const newDepartment = await Department.create({ info, name });
+  const newDepartment = await Department.create({ info, name, roles, jobs });
   res.status(201).json({
     message: "created successfully",
     data: newDepartment,

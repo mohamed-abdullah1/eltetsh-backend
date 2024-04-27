@@ -8,6 +8,12 @@ const departmentSchema = new mongoose.Schema({
   info: {
     type: String,
   },
+  roles: {
+    type: String,
+  },
+  jobs: {
+    type: String,
+  },
 });
 
 const Department = mongoose.model("Department", departmentSchema);

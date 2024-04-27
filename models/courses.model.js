@@ -69,6 +69,9 @@ const courseSchema = new mongoose.Schema({
     type: mongoose.SchemaTypes.ObjectId,
     ref: "Department",
   },
+  Info: {
+    type: String,
+  },
 });
 
 const Course = mongoose.model("Course", courseSchema);

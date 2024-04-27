@@ -6,8 +6,16 @@ const User = require("../models/users.model");
 //@route    POST /api/courses/create
 //@access   Private ADMIN
 const createCourse = asyncHandler(async (req, res) => {
-  const { code, name, max_mark, min_mark, appointment, year, department } =
-    req.body;
+  const {
+    code,
+    name,
+    max_mark,
+    min_mark,
+    appointment,
+    year,
+    department,
+    info,
+  } = req.body;
   //check all required fields
   if (
     !code ||
@@ -16,7 +24,8 @@ const createCourse = asyncHandler(async (req, res) => {
     !min_mark ||
     !appointment ||
     !year ||
-    !department
+    !department ||
+    !info
   ) {
     res.status(400);
     throw new Error("Please complete all fields");
@@ -42,6 +51,7 @@ const createCourse = asyncHandler(async (req, res) => {
     appointment,
     year,
     department,
+    info,
   });
   //respond
   res.status(201).json({ ...newCourse?._doc });
