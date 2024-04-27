@@ -69,7 +69,7 @@ const courseSchema = new mongoose.Schema({
     type: mongoose.SchemaTypes.ObjectId,
     ref: "Department",
   },
-  Info: {
+  info: {
     type: String,
   },
 });
