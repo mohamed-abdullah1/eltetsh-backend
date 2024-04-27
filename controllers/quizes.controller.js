@@ -213,6 +213,7 @@ const getOneStudentResultsForManyQuiz = asyncHandler(async (req, res) => {
     {
       path: "quizQuestionId",
       match,
+      populate: { path: "course" },
     },
     "studentId",
   ]);
@@ -267,7 +268,12 @@ const getSingleQuizQuestion = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("quiz question doesn't exist");
   }
-  if (!quizQuestion?.allowAppearanceQuizQuestions) {
+  //check if the doctor who made the quiz can access it
+
+  if (
+    !quizQuestion?.allowAppearanceQuizQuestions &&
+    req.user.role === "student"
+  ) {
     return res
       .status(400)
       .json({ message: "This quiz questions isn't allowed to be seen" });
@@ -409,7 +415,17 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
     "department",
     "doctorId",
   ]);
-  res.status(200).json({ count: quizes.length, data: quizes });
+  const finalQuizes = await Promise.all(
+    quizes.map(async (q) => {
+      const result = await QuizResults.findOne({ quizQuestionId: q._id });
+      q.allowStudentToSeeResult = result
+        ? result.allowStudentToSeeResult
+        : false;
+      return q;
+    })
+  );
+
+  res.status(200).json({ count: quizes.length, data: finalQuizes });
 });
 const getQuizesForAStudent = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
