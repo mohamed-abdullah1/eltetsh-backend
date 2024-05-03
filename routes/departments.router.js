@@ -17,3 +17,4 @@ router
   .delete(verifyAdmin, deleteDepartment)
   .put(verifyAdmin, updateDepartment);
 module.exports = router;
+//emoji
