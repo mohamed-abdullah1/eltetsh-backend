@@ -152,9 +152,9 @@ const checkStuff = (req, res, next) => {
   next();
 };
 const checkStuffOrDoctor = (req, res, next) => {
-  if (req.user.role !== "stuff" && req.user.role !== "doctor") {
+  if (req.user.role !== "staff" && req.user.role !== "doctor") {
     res.status(401);
-    throw new Error("not authorized, stuff or doctor only can access it");
+    throw new Error("not authorized, staff or doctor only can access it");
   }
   next();
 };

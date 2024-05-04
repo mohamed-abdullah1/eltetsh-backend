@@ -219,8 +219,15 @@ const getUserInfo = asyncHandler(async (req, res) => {
 //@route    POST /api/auth/update
 //@access   PRIVATE
 const updateUserInfo = asyncHandler(async (req, res) => {
-  const { name, department, studentCourses, doctorCourses, year, newPassword } =
-    req.body;
+  const {
+    name,
+    department,
+    studentCourses,
+    doctorCourses,
+    year,
+    newPassword,
+    email,
+  } = req.body;
   let salt, hashedPass;
   if (newPassword !== undefined) {
     //hash pass
@@ -268,6 +275,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
       year,
       userImagesId: req.file ? userImagesId : req.user.userImagesId,
       password: hashedPass,
+      email,
     },
     { new: true, runValidators: true }
   );
