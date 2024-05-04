@@ -144,11 +144,26 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
     throw new Error("not authorized , no token");
   }
 });
-
+const checkStuff = (req, res, next) => {
+  if (req.user.role !== "stuff") {
+    res.status(401);
+    throw new Error("not authorized, stuff only can access it");
+  }
+  next();
+};
+const checkStuffOrDoctor = (req, res, next) => {
+  if (req.user.role !== "stuff" && req.user.role !== "doctor") {
+    res.status(401);
+    throw new Error("not authorized, stuff or doctor only can access it");
+  }
+  next();
+};
 module.exports = {
   verifyToken,
   verifyAdmin,
   verifyDoctor,
   isUserOrAdmin,
   verifyDoctorOrAdmin,
+  checkStuff,
+  checkStuffOrDoctor,
 };
