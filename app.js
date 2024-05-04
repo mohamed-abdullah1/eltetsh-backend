@@ -12,6 +12,7 @@ const postRouter = require("./routes/posts.router");
 const testRouter = require("./helpers/test.helper");
 const quizRouter = require("./routes/quizes.router");
 const semesterScheduleRouter = require("./routes/semesterSchedule.router");
+const resultsRouter = require("./routes/results.router");
 //middlewares
 const { errorMiddleware } = require("./middleware/error.middleware");
 
@@ -34,6 +35,7 @@ app.use("/api/departments/", departmentRouter);
 app.use("/api/posts/", postRouter);
 app.use("/api/quiz/", quizRouter);
 app.use("/api/semester-schedule/", semesterScheduleRouter);
+app.use("/api/results/", resultsRouter);
 
 app.use(errorMiddleware);
 app.use("*", function (_, res) {
