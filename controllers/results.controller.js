@@ -6,19 +6,25 @@ const {
   getDownloadURL,
   getStorage,
 } = require("firebase/storage");
+const Course = require("../models/courses.model");
 const storage = getStorage();
 
 const addResults = asyncHandler(async (req, res) => {
-  const { department, year } = req.body;
-  if (!department || !year) {
+  const { department, course } = req.body;
+  if (!department || !course) {
     res.status(400);
     throw new Error("please complete all fields");
   }
-
+  //! CHECK IF THE COURSE IS IN THAT DEPARTMENT OR NOT
+  const courseExists = await Course.findOne({ _id: course, department });
+  if (!courseExists) {
+    res.status(400);
+    throw new Error("Course is not in that department");
+  }
   //check if it found or not to prevent duplicates
   const result = await Results.findOne({
     department,
-    year,
+    course,
   });
   if (result) {
     res.status(400);
@@ -26,7 +32,7 @@ const addResults = asyncHandler(async (req, res) => {
   }
   let storageRef, metadata, downloadURL, snapshot;
   if (req?.file) {
-    storageRef = ref(storage, `results/${department}/${year}`);
+    storageRef = ref(storage, `results/${department}/${course}`);
 
     // Create file metadata including the content type
     metadata = {
@@ -50,7 +56,7 @@ const addResults = asyncHandler(async (req, res) => {
   }
   const newResult = await Results.create({
     department,
-    year,
+    course,
 
     excelUrl: downloadURL,
   });
@@ -68,14 +74,14 @@ const getResult = asyncHandler(async (req, res) => {
 });
 const getAllResults = asyncHandler(async (req, res) => {
   const { skip, limit } = req.pagination;
-  //filter by year
-  const { year, department } = req.query;
+  //filter by course and department
+  const { course, department } = req.query;
 
   const query =
-    year && department
-      ? { year, department }
-      : year
-      ? { year }
+    course && department
+      ? { course, department }
+      : course
+      ? { course }
       : department
       ? { department }
       : {};
@@ -83,7 +89,7 @@ const getAllResults = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
-    .populate("department");
+    .populate("department", "course");
 
   res.status(200).json({ count: results.length, data: results });
 });
@@ -97,7 +103,7 @@ const editResult = asyncHandler(async (req, res) => {
   if (req?.file) {
     storageRef = ref(
       storage,
-      `results/${oldResult.department}/${oldResult.year}`
+      `results/${oldResult.department}/${oldResult.course}`
     );
     // Create file metadata including the content type
     metadata = {

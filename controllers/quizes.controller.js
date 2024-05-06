@@ -158,43 +158,6 @@ const getStudentsResultsForAQuiz = asyncHandler(async (req, res) => {
   res.status(200).json({ data: quizResults });
 });
 const getOneStudentResultsForManyQuiz = asyncHandler(async (req, res) => {
-  // Function to get student quizzes filtered by course
-  // async function getStudentQuizzesByCourse(studentId, courseId) {
-  //   try {
-  //     // First, find all quiz results for the student
-  //     const quizResults = await QuizResults.find({ studentId });
-
-  //     // Extract the quiz question IDs from the quiz results
-  //     const quizQuestionIds = quizResults.map(
-  //       (result) => result.quizQuestionId
-  //     );
-  //     console.log("===---=====---", quizQuestionIds);
-
-  //     // Now, find the quiz questions for the extracted IDs and filter by course
-  //     const studentQuizzes = await QuizQuestions.aggregate([
-  //       // Match quiz questions by their IDs
-  //       { $match: { _id: quizQuestionIds[0] } },
-  //       // Lookup to get course details from the referenced Course model
-  //       // {
-  //       //   $lookup: {
-  //       //     from: "courses", // Assuming your Course model is named 'Course'
-  //       //     localField: "_id",
-  //       //     foreignField: "course",
-  //       //     as: "course",
-  //       //   },
-  //       // },
-  //       // // Unwind the courseDetails array
-  //       // { $unwind: "$courseDetails" },
-  //       // // Match quiz questions by the specified course ID
-  //       // { $match: { "courseDetails._id": courseId } },
-  //     ]);
-  //     console.log("===---=====---", studentQuizzes);
-  //     return studentQuizzes;
-  //   } catch (error) {
-  //     console.error("Error fetching student quizzes:", error);
-  //     throw error;
-  //   }
-  // }
   const { studentId } = req.params;
   const { courseId, departmentId } = req.query;
   console.log({ studentId, courseId });
