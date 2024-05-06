@@ -30,16 +30,20 @@ const postSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    department: {
-      type: mongoose.SchemaTypes.ObjectId,
-      ref: "Department",
-      required: true,
-    },
-    course: {
-      type: mongoose.SchemaTypes.ObjectId,
-      ref: "Course",
-      required: true,
-    },
+    department: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "Department",
+        required: true,
+      },
+    ],
+    course: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "Course",
+        required: true,
+      },
+    ],
     reactions: {
       like: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],
       dislike: [{ type: mongoose.SchemaTypes.ObjectId, ref: "User" }],

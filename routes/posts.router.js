@@ -29,8 +29,8 @@ router.route("/all").get(verifyToken, getAllPosts);
 router
   .route("/:id")
   .get(verifyToken, getPostById)
-  .put(verifyDoctor, updatePost)
-  .delete(verifyDoctor, deletePost);
+  .put(verifyToken, checkStuffOrDoctor, updatePost)
+  .delete(verifyToken, checkStuffOrDoctor, deletePost);
 router.put("/add-comment/:postId", verifyToken, makeComment);
 router.put("/delete-comment/:postId/:commentId", verifyToken, deleteComment);
 router.route("/react/:id").put(verifyToken, reactPost);

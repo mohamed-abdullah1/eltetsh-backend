@@ -12,6 +12,7 @@ const {
 } = require("firebase/storage");
 const config = require("../config/firebase.config");
 const { getMetadata, list } = require("firebase/storage");
+const Department = require("../models/departments.model");
 const ObjectId = require("mongoose").Types.ObjectId;
 
 //Initialize a firebase application
@@ -30,11 +31,24 @@ const createPost = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Please add all fields");
   }
-  //! CHECK IF THE COURSE IS IN THAT DEPARTMENT OR NOT
-  const courseExists = await Course.findOne({ _id: course, department });
-  if (!courseExists) {
-    res.status(400);
-    throw new Error("Course is not in that department");
+  let allCoursesIds, allDepartmentIds;
+  if (req.user.role === "staff" && course === "all") {
+    const deptQuery = department !== "all" ? { department } : {};
+    allCoursesIds = await Course.find(deptQuery).select("_id");
+  }
+  if (req.user.role === "staff" && department === "all") {
+    allDepartmentIds = await Department.find().select("_id");
+  }
+  if (
+    !(req.user.role === "staff" && course === "all") &&
+    !(req.user.role === "staff" && department === "all")
+  ) {
+    //! CHECK IF THE COURSE IS IN THAT DEPARTMENT OR NOT
+    const courseExists = await Course.findOne({ _id: course, department });
+    if (!courseExists) {
+      res.status(400);
+      throw new Error("Course is not in that department");
+    }
   }
   const postFilesId = uuidv4();
   //images,pdfs,files
@@ -74,14 +88,19 @@ const createPost = asyncHandler(async (req, res) => {
     title,
     content,
     author,
-    department,
-    course,
+    department:
+      req.user.role === "staff" && department === "all"
+        ? allDepartmentIds
+        : [department],
+    course:
+      req.user.role === "staff" && course === "all" ? allCoursesIds : [course],
     postFilesId,
   });
   await post.save();
   res.status(201).json({ ...post?._doc, files: uploadedFiles });
 });
-
+//==================================================================
+//==================================================================
 // @desc    get all posts
 // @route   GET /api/posts
 // @access  PRIVATE
