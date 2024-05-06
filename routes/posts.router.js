@@ -29,7 +29,12 @@ router.route("/all").get(verifyToken, getAllPosts);
 router
   .route("/:id")
   .get(verifyToken, getPostById)
-  .put(verifyToken, checkStuffOrDoctor, updatePost)
+  .put(
+    verifyToken,
+    checkStuffOrDoctor,
+    upload.array("posts_files", 5),
+    updatePost
+  )
   .delete(verifyToken, checkStuffOrDoctor, deletePost);
 router.put("/add-comment/:postId", verifyToken, makeComment);
 router.put("/delete-comment/:postId/:commentId", verifyToken, deleteComment);

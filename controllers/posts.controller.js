@@ -95,9 +95,10 @@ const createPost = asyncHandler(async (req, res) => {
     course:
       req.user.role === "staff" && course === "all" ? allCoursesIds : [course],
     postFilesId,
+    postFiles: uploadedFiles?.map((file) => file.downloadURL),
   });
   await post.save();
-  res.status(201).json({ ...post?._doc, files: uploadedFiles });
+  res.status(201).json({ ...post?._doc });
 });
 //==================================================================
 //==================================================================
@@ -106,6 +107,8 @@ const createPost = asyncHandler(async (req, res) => {
 // @access  PRIVATE
 const getAllPosts = asyncHandler(async (req, res) => {
   const { filterByCoursesIds, filterByDepartmentId } = req.query;
+  console.log("👉🔥 ", filterByCoursesIds);
+
   //filterByCoursesIds
   if (filterByCoursesIds?.length > 0 && filterByDepartmentId) {
     const courseExists = await Promise.all(
@@ -159,6 +162,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
       "reactions.love",
       "reactions.dislike",
       "reactions.like",
+      "comments.author",
     ])
     .skip(skip)
     .limit(limit);
@@ -220,9 +224,47 @@ const getPostById = asyncHandler(async (req, res) => {
 // @access  PRIVATE
 const updatePost = asyncHandler(async (req, res) => {
   const { title, content, course, department } = req.body;
+  let uploadedFiles;
+  if (req?.files) {
+    const uploadedFilesPromises = req.files.map(async (file) => {
+      const storageRef = ref(storage, `posts/${uuidv4()}/${file.originalname}`);
+
+      // Create file metadata including the content type
+      const metadata = {
+        contentType: file.mimetype,
+      };
+
+      // Upload the file in the bucket storage
+      const snapshot = await uploadBytesResumable(
+        storageRef,
+        file.buffer,
+        metadata
+      );
+      // Grab the public URL for each file
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      return {
+        name: file.originalname,
+        type: file.mimetype,
+        downloadURL: downloadURL,
+      };
+    });
+
+    // Wait for all files to be uploaded and processed
+    uploadedFiles = await Promise.all(uploadedFilesPromises);
+  }
+  const newObj = req.files
+    ? {
+        title,
+        content,
+        course,
+        department,
+        postFiles: uploadedFiles.map((file) => file.downloadURL),
+      }
+    : { title, content, course, department };
   const updatedPost = await Post.findOneAndUpdate(
     { _id: req.params.id },
-    { title, content, course, department },
+    newObj,
     { new: true, runValidators: true }
   );
   if (!updatedPost) {
@@ -316,7 +358,7 @@ const makeComment = asyncHandler(async (req, res) => {
   const newPost = await Post.findOneAndUpdate(
     { _id: req.params.postId },
     { $push: { comments: newComment } },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true, populate: ["author", "comments.author"] }
   );
   res
     .status(200)
@@ -337,9 +379,10 @@ const deleteComment = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("You aren't allowed to delete this comment");
   }
-  const newPost = await Post.findOneAndDelete(
+  const newPost = await Post.findOneAndUpdate(
     { _id: postId },
-    { $pull: { comments: comment } }
+    { $pull: { comments: comment } },
+    { new: true, runValidators: true, populate: ["author", "comments.author"] }
   );
   res.status(200).json({ message: "deleted successfully", post: newPost });
 });
