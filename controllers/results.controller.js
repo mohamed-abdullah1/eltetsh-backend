@@ -91,7 +91,7 @@ const getAllResults = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
-    .populate("department", "course");
+    .populate(["department", "course"]);
 
   res.status(200).json({ count: results.length, data: results });
 });
