@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const Results = require("../models/results.model");
+const { Results, ExcelResults } = require("../models/results.model");
 const {
   ref,
   uploadBytesResumable,
@@ -7,8 +7,10 @@ const {
   getStorage,
 } = require("firebase/storage");
 const Course = require("../models/courses.model");
+const User = require("../models/users.model");
+const { uploadResults } = require("../helpers/uploadResults");
 const storage = getStorage();
-
+const ObjectId = require("mongoose").Types.ObjectId;
 const addResults = asyncHandler(async (req, res) => {
   const { department, course } = req.body;
   if (!department || !course) {
@@ -22,30 +24,28 @@ const addResults = asyncHandler(async (req, res) => {
     throw new Error("Course is not in that department");
   }
   //check if it found or not to prevent duplicates
-  const result = await Results.findOne({
-    department,
-    course,
-  });
-  if (result) {
-    res.status(400);
-    throw new Error("This result is already exist.");
-  }
+
+  await Results.deleteMany({ department, course });
+
   let storageRef, metadata, downloadURL, snapshot;
   if (req?.file) {
-    storageRef = ref(storage, `results/${department}/${course}`);
+    // Generate a unique filename based on timestamp or any other logic
+    const filename = `excel_result_${Date.now()}.xlsx`;
+
+    // Create the storage reference with the desired filename
+    storageRef = ref(storage, `results/${filename}`);
 
     // Create file metadata including the content type
     metadata = {
       contentType: req.file.mimetype,
     };
 
-    // Upload the file in the bucket storage
+    // Upload the file to the bucket storage
     snapshot = await uploadBytesResumable(
       storageRef,
       req.file.buffer,
       metadata
     );
-    //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
 
     // Grab the public url
     downloadURL = await getDownloadURL(snapshot.ref);
@@ -57,9 +57,10 @@ const addResults = asyncHandler(async (req, res) => {
   const newResult = await Results.create({
     department,
     course,
-
     excelUrl: downloadURL,
   });
+  uploadResults(req, downloadURL);
+
   res.status(201).json(newResult);
 });
 
@@ -72,6 +73,7 @@ const getResult = asyncHandler(async (req, res) => {
   }
   res.status(200).json({ data: result });
 });
+
 const getAllResults = asyncHandler(async (req, res) => {
   const { skip, limit } = req.pagination;
   //filter by course and department
@@ -133,10 +135,28 @@ const deleteResult = asyncHandler(async (req, res) => {
     .status(200)
     .json({ message: "deleted successfully", data: deletedResult });
 });
+const getResultsForOneStudent = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+  //check user who send Request is the student
+  const student = await User.findById(studentId);
+  if (
+    !new ObjectId(student._id).equals(req.user._id) &&
+    req.user.role !== "admin"
+  ) {
+    res.status(401);
+    throw new Error("Unauthorized");
+  }
+  const results = await ExcelResults.find({ student: studentId }).populate([
+    "student",
+    "course",
+  ]);
+  res.status(200).json({ data: results });
+});
 module.exports = {
   addResults,
   getResult,
   editResult,
   getAllResults,
   deleteResult,
+  getResultsForOneStudent,
 };

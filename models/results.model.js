@@ -1,5 +1,24 @@
 // semester schedule model
 const mongoose = require("mongoose");
+const ExcelResultsSchema = new mongoose.Schema({
+  student: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: "User",
+    require: [true, "student id required"],
+  },
+  course: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: "Course",
+    require: [true, "course id required"],
+  },
+  mark: {
+    type: Number,
+    require: [true, "result required"],
+  },
+  excelFileId: {
+    type: String,
+  },
+});
 const ResultsSchema = new mongoose.Schema(
   {
     department: {
@@ -19,4 +38,5 @@ const ResultsSchema = new mongoose.Schema(
   { timestamps: true }
 );
 const Results = mongoose.model("Results", ResultsSchema);
-module.exports = Results;
+const ExcelResults = mongoose.model("ExcelResults", ExcelResultsSchema);
+module.exports = { Results, ExcelResults };

@@ -8,6 +8,7 @@ const {
   editResult,
   getAllResults,
   deleteResult,
+  getResultsForOneStudent,
 } = require("../controllers/results.controller");
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -21,4 +22,5 @@ router.put(
   editResult
 );
 router.delete("/delete/:resultId", verifyAdmin, deleteResult);
+router.get("/student-results/:studentId", verifyToken, getResultsForOneStudent);
 module.exports = router;

@@ -91,30 +91,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //check course year same as the student year
 
   //create user
-  const newUserData =
-    role === "student"
-      ? {
-          name,
-          password: hashedPass,
-          email,
-          nationalId: nationalId + "",
-          role,
-          department,
-          studentCourses,
-          year,
-          userImagesId,
-        }
-      : {
-          name,
-          password: hashedPass,
-          email,
-          nationalId: nationalId + "",
-          role,
-          department,
-          doctorCourses,
-          userImagesId,
-        };
-  const newUser = await User.create(newUserData);
+
   //! USER IMAGE
   let storageRef, metadata, downloadURL, snapshot;
   if (req?.file) {
@@ -136,7 +113,32 @@ const registerUser = asyncHandler(async (req, res) => {
     // Grab the public url
     downloadURL = await getDownloadURL(snapshot.ref);
   }
-
+  const newUserData =
+    role === "student"
+      ? {
+          name,
+          password: hashedPass,
+          email,
+          nationalId: nationalId + "",
+          role,
+          department,
+          studentCourses,
+          year,
+          userImagesId,
+          user_image: req?.file ? downloadURL : null,
+        }
+      : {
+          name,
+          password: hashedPass,
+          email,
+          nationalId: nationalId + "",
+          role,
+          department,
+          doctorCourses,
+          userImagesId,
+          user_image: req?.file ? downloadURL : null,
+        };
+  const newUser = await User.create(newUserData);
   res.status(201).json({
     _id: newUser?._doc?._id,
     name: newUser?._doc?.name,
@@ -149,13 +151,7 @@ const registerUser = asyncHandler(async (req, res) => {
     studentCourses: newUser?._doc?.studentCourses,
     doctorCourses: newUser?._doc?.doctorCourses,
     year: newUser?._doc?.year,
-    user_image: req?.file
-      ? {
-          name: req.file.originalname,
-          type: req.file.mimetype,
-          downloadURL: downloadURL,
-        }
-      : {},
+    user_image: req?.file ? downloadURL : null,
     token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
   });
 });
@@ -236,7 +232,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   }
   //check of all the studentCourses are at the same year
   if (req.user.role === "student") {
-    studentCourses.forEach(async (sCourse) => {
+    studentCourses?.forEach(async (sCourse) => {
       const c = await Course.findOne({
         _id: sCourse.course,
         year: year ? year : req.user.year,
@@ -249,21 +245,29 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   }
   const userImagesId = uuidv4();
   //!! user image
-  let storageRef = ref(storage, `users/${req.user.userImagesId}`);
-  let files = await list(storageRef);
-  // Iterate through each item in the list and retrieve download URLs
-  let fileData = await Promise.all(
-    files.items.map(async (item) => {
-      const downloadURL = await getDownloadURL(item);
-      const metadata = await getMetadata(item);
+  let storageRef, metadata, downloadURL, snapshot;
+  if (req?.file) {
+    storageRef = ref(
+      storage,
+      `users/${userImagesId}/${name ? name : req.user?.name}-profile-img`
+    );
 
-      return {
-        name: item.name,
-        downloadURL: downloadURL,
-        type: metadata.contentType,
-      };
-    })
-  );
+    // Create file metadata including the content type
+    metadata = {
+      contentType: req.file.mimetype,
+    };
+
+    // Upload the file in the bucket storage
+    snapshot = await uploadBytesResumable(
+      storageRef,
+      req.file.buffer,
+      metadata
+    );
+    //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
+
+    // Grab the public url
+    downloadURL = await getDownloadURL(snapshot.ref);
+  }
 
   const updatedUser = await User.findOneAndUpdate(
     { _id: req.params.id },
@@ -274,6 +278,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
       doctorCourses,
       year,
       userImagesId: req.file ? userImagesId : req.user.userImagesId,
+      user_image: req?.file ? downloadURL : req.user.user_image,
       password: hashedPass,
       email,
     },
@@ -288,39 +293,8 @@ const updateUserInfo = asyncHandler(async (req, res) => {
   if (!updatedUser) {
     return res.status(404).json({ message: "User not found" });
   }
-  if (req?.file) {
-    storageRef = ref(storage, `users/${userImagesId}/${userImagesId}`);
-
-    // Create file metadata including the content type
-    let metadata = {
-      contentType: req.file?.mimetype,
-    };
-
-    // Upload the file in the bucket storage
-    const snapshot = await uploadBytesResumable(
-      storageRef,
-      req.file?.buffer,
-      metadata
-    );
-    //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
-
-    // Grab the public url
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return res.status(200).json({
-      ...withoutPassUser,
-      user_image: {
-        name: req.file.originalname,
-        type: req.file.mimetype,
-        downloadURL: downloadURL,
-      },
-    });
-  }
-
   res.status(200).json({
     ...withoutPassUser,
-    user_image: {
-      ...fileData[0],
-    },
   });
 });
 

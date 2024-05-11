@@ -67,6 +67,9 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: ["1st", "2nd", "3th", "4th", "5th"],
     },
+    user_image: {
+      type: String,
+    },
   },
   {
     timestamps: true,
