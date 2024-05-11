@@ -23,6 +23,7 @@ router
     verifyToken,
     checkStuffOrDoctor,
     upload.array("posts_files", 5),
+    upload.array("posts_images", 5),
     createPost
   );
 router.route("/all").get(verifyToken, getAllPosts);
