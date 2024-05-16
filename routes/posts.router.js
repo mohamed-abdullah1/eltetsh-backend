@@ -17,15 +17,13 @@ const {
 } = require("../middleware/auth.middleware");
 const upload = multer({ storage: multer.memoryStorage() });
 
-router
-  .route("/create")
-  .post(
-    verifyToken,
-    checkStuffOrDoctor,
-    upload.array("posts_files", 5),
-    upload.array("posts_images", 5),
-    createPost
-  );
+router.route("/create").post(
+  verifyToken,
+  checkStuffOrDoctor,
+  upload.array("posts_files", 5),
+  // upload.array("posts_images", 5),
+  createPost
+);
 router.route("/all").get(verifyToken, getAllPosts);
 router
   .route("/:id")

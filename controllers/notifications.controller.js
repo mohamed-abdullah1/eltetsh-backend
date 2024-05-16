@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const ClientToken = require("../models/clientTokens.model");
 const { QuizQuestions } = require("../models/quizes.model");
 const FCM = require("fcm-node");
+const User = require("../models/users.model");
 const fcm = new FCM(process.env.FIREBASE_SERVER_KEY);
 
 const sendToken = asyncHandler(async (req, res) => {

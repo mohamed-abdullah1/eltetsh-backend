@@ -17,11 +17,11 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: uuidv4, // Set default value to a UUID
     },
-    postFiles: [
-      {
-        type: String,
-      },
-    ],
+    // postFiles: [
+    //   {
+    //     type: String,
+    //   },
+    // ],
     postImages: [{ type: String }],
     title: {
       type: String,
