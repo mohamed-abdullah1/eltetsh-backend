@@ -13,6 +13,17 @@ const sendToken = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("please add token");
   }
+  const oldToken = await ClientToken.findOne({ user: req.user._id });
+  if (oldToken) {
+    const updatedClientToken = await ClientToken.updateOne(
+      { user: req.user._id },
+      { token }
+    );
+    return res.status(200).json({
+      message: "Add token successfully",
+      token: updatedClientToken.token,
+    });
+  }
   //insert token
   const newToken = await ClientToken.create({
     token,
