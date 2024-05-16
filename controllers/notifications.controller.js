@@ -51,10 +51,14 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
     },
     { _id: 1 }
   );
+  console.log("👉🔥 ", { studentsEnrolledIntoCourse });
+
   //get the tokens of students
   const tokens = await ClientToken.find({
     user: { $in: studentsEnrolledIntoCourse },
   });
+  console.log("👉🔥 ", { tokens });
+
   //send notification
   const fcmMessage = {
     registration_ids: tokens, // Array of FCM registration tokens
