@@ -20,7 +20,7 @@ const sendToken = asyncHandler(async (req, res) => {
       { token }
     );
     return res.status(200).json({
-      message: "Add token successfully",
+      message: "update token successfully",
       token: updatedClientToken.token,
     });
   }
@@ -46,22 +46,29 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
   //get the tokens of students who enrolled into the quiz course
   const studentsEnrolledIntoCourse = await User.find(
     {
-      studentCourses: { $in: [quiz.course] },
+      "studentCourses.course": quiz.course,
       role: "student",
     },
     { _id: 1 }
   );
-  console.log("👉🔥 ", { studentsEnrolledIntoCourse });
+  console.log("👉🔥 ", {
+    studentsEnrolledIntoCourse: studentsEnrolledIntoCourse.map((x) => x._id),
+  });
 
   //get the tokens of students
   const tokens = await ClientToken.find({
     user: { $in: studentsEnrolledIntoCourse },
   });
   console.log("👉🔥 ", { tokens });
-
+  if (tokens.length === 0) {
+    res.status(400);
+    throw new Error(
+      "Can't send tokens because no users enrolled into the quiz course or their tokens aren't saved into database"
+    );
+  }
   //send notification
   const fcmMessage = {
-    registration_ids: tokens, // Array of FCM registration tokens
+    registration_ids: tokens.map((t) => t.token), // Array of FCM registration tokens
     notification: {
       title: title,
       body: messageBody,
