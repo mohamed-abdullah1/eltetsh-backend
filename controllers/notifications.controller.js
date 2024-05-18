@@ -66,9 +66,35 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
       "Can't send tokens because no users enrolled into the quiz course or their tokens aren't saved into database"
     );
   }
+  console.log(
+    "👉🔥 ",
+    Array.from(new Set(tokens.map((item) => JSON.stringify(item))))
+  );
+  let seen = {};
   //send notification
+  console.log(
+    "👉🔥 ",
+    tokens.filter((item) => {
+      if (seen[item.user]) {
+        return false;
+      } else {
+        seen[item.user] = true;
+        return true;
+      }
+    })
+  );
+
   const fcmMessage = {
-    registration_ids: tokens.map((t) => t.token), // Array of FCM registration tokens
+    registration_ids: tokens
+      .filter((item) => {
+        if (seen[item.user]) {
+          return false;
+        } else {
+          seen[item.user] = true;
+          return true;
+        }
+      })
+      .map((t) => t.token), // Array of FCM registration tokens
     notification: {
       title: title,
       body: messageBody,

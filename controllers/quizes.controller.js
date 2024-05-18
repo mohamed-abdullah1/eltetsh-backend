@@ -380,10 +380,8 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
   ]);
   const finalQuizes = await Promise.all(
     quizes.map(async (q) => {
-      const result = await QuizResults.findOne({ quizQuestionId: q._id });
-      let allowStudentToSeeResult_ = result
-        ? result.allowStudentToSeeResult
-        : false;
+      const results = await QuizResults.find({ quizQuestionId: q._id });
+      let allowStudentToSeeResult_ = results.length > 0;
       return {
         ...q.toObject(),
         allowStudentToSeeResult: allowStudentToSeeResult_,
