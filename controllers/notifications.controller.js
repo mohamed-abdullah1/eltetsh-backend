@@ -77,8 +77,7 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
   fcm.send(fcmMessage, function (err, response) {
     if (err) {
       console.error("Error sending notification:", err);
-      res.status(500);
-      throw new Error("Failed to send notification");
+      res.status(400).json({ msg: err });
     } else {
       res.status(200).json({
         success: true,
