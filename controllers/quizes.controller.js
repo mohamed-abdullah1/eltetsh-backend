@@ -131,12 +131,16 @@ const submitQuiz = asyncHandler(async (req, res) => {
     });
     return score;
   };
+  const oneQuizResult = await QuizResults.findOne({
+    allowStudentToSeeResult: true,
+  });
   //create quiz
   const _ = await QuizResults.create({
     studentId,
     quizQuestionId,
     answers,
     result: calcResults(),
+    allowStudentToSeeResult: !!oneQuizResult,
   });
   res.status(201).json({ message: "submitted successfully" });
 });

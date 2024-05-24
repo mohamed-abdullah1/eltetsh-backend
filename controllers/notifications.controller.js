@@ -101,16 +101,18 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
     },
   };
   fcm.send(fcmMessage, function (err, response) {
-    if (err) {
-      console.error("Error sending notification:", err);
-      res.status(400).json({ msg: err });
-    } else {
-      res.status(200).json({
-        success: true,
-        response: response,
-        message: "Successfully sent notification:",
-      });
-    }
+    console.log("🔥🔥🔥🔥🔥🔥🔥 ", typeof err, { err });
+
+    // if (err) {
+    //   // console.error("", err);
+    //   res.status(400).json({ msg: err });
+    // } else {
+    res.status(200).json({
+      success: true,
+      response: response,
+      message: "Successfully sent notification:",
+    });
+    // }
   });
 });
 
