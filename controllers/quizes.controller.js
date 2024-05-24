@@ -384,11 +384,10 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
   ]);
   const finalQuizes = await Promise.all(
     quizes.map(async (q) => {
-      const results = await QuizResults.find({ quizQuestionId: q._id });
-      let allowStudentToSeeResult_ = results.length > 0;
+      const result = await QuizResults.findOne({ quizQuestionId: q._id });
       return {
         ...q.toObject(),
-        allowStudentToSeeResult: allowStudentToSeeResult_,
+        allowStudentToSeeResult: result.allowStudentToSeeResult,
       };
     })
   );
