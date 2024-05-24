@@ -3,9 +3,7 @@ const ClientToken = require("../models/clientTokens.model");
 const { QuizQuestions } = require("../models/quizes.model");
 const FCM = require("fcm-node");
 const User = require("../models/users.model");
-const fcm = new FCM(
-  "AAAA8EDDqEE:APA91bGMwwl-sUGO0BvQCTRT5LEj6o88VBL9JXZWKT6v3c0bG0hWjoARfL3P3hi0clRR9u05rAYVDmZe3up9ZKSZXX3i9RPFLFq4EVEWkFO-wpDUH_ugyPjiB2AHb6uMqT9yIx75YFCr"
-);
+const fcm = new FCM(process.env.FIREBASE_SERVER_KEY);
 
 const sendToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
