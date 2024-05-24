@@ -387,7 +387,9 @@ const getQuizesForADoctor = asyncHandler(async (req, res) => {
       const result = await QuizResults.findOne({ quizQuestionId: q._id });
       return {
         ...q.toObject(),
-        allowStudentToSeeResult: result.allowStudentToSeeResult,
+        allowStudentToSeeResult: result
+          ? result.allowStudentToSeeResult
+          : false,
       };
     })
   );
