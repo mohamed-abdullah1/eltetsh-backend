@@ -3,7 +3,9 @@ const ClientToken = require("../models/clientTokens.model");
 const { QuizQuestions } = require("../models/quizes.model");
 const FCM = require("fcm-node");
 const User = require("../models/users.model");
-const fcm = new FCM(process.env.FIREBASE_SERVER_KEY);
+const fcm = new FCM(
+  "AAAA8EDDqEE:APA91bGMwwl-sUGO0BvQCTRT5LEj6o88VBL9JXZWKT6v3c0bG0hWjoARfL3P3hi0clRR9u05rAYVDmZe3up9ZKSZXX3i9RPFLFq4EVEWkFO-wpDUH_ugyPjiB2AHb6uMqT9yIx75YFCr"
+);
 
 const sendToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
@@ -72,47 +74,30 @@ const notifyWithQuiz = asyncHandler(async (req, res) => {
   );
   let seen = {};
   //send notification
-  console.log(
-    "👉🔥 ",
-    tokens.filter((item) => {
-      if (seen[item.user]) {
-        return false;
-      } else {
-        seen[item.user] = true;
-        return true;
-      }
-    })
-  );
+  console.log("👉🔥 ", [...new Set(tokens.map((t) => t.token))]);
 
   const fcmMessage = {
-    registration_ids: tokens
-      .filter((item) => {
-        if (seen[item.user]) {
-          return false;
-        } else {
-          seen[item.user] = true;
-          return true;
-        }
-      })
-      .map((t) => t.token), // Array of FCM registration tokens
+    registration_ids: [...new Set(tokens.map((t) => t.token))], // Array of FCM registration tokens
     notification: {
       title: title,
       body: messageBody,
     },
   };
   fcm.send(fcmMessage, function (err, response) {
-    console.log("🔥🔥🔥🔥🔥🔥🔥 ", typeof err, { err });
+    console.log("🔥🔥🔥🔥🔥🔥🔥 ", typeof err, { err, fcmMessage });
 
-    // if (err) {
-    //   // console.error("", err);
-    //   res.status(400).json({ msg: err });
-    // } else {
-    res.status(200).json({
-      success: true,
-      response: response,
-      message: "Successfully sent notification:",
-    });
-    // }
+    if (err) {
+      // console.error("", err);
+      res.status(400).json({ msg: err });
+    } else {
+      console.log("👉🔥✅ ", "SUCCESS!!");
+
+      res.status(200).json({
+        success: true,
+        response: response,
+        message: "Successfully sent notification:",
+      });
+    }
   });
 });
 
