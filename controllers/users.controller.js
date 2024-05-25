@@ -127,7 +127,9 @@ const registerUser = asyncHandler(async (req, res) => {
           studentCourses,
           year,
           userImagesId,
-          user_image: req?.file ? downloadURL : null,
+          user_image: req?.file
+            ? downloadURL
+            : "https://camo.githubusercontent.com/a09826e3c20bbb772e71f52a449fdc9db3f58dff6ee2a0ab67ffdfd415f18760/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f372f37632f50726f66696c655f6176617461725f706c616365686f6c6465725f6c617267652e706e67",
         }
       : {
           name,
@@ -138,7 +140,9 @@ const registerUser = asyncHandler(async (req, res) => {
           department,
           doctorCourses,
           userImagesId,
-          user_image: req?.file ? downloadURL : null,
+          user_image: req?.file
+            ? downloadURL
+            : "https://camo.githubusercontent.com/a09826e3c20bbb772e71f52a449fdc9db3f58dff6ee2a0ab67ffdfd415f18760/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f372f37632f50726f66696c655f6176617461725f706c616365686f6c6465725f6c617267652e706e67",
         };
   const newUser = await User.create(newUserData);
   res.status(201).json({
