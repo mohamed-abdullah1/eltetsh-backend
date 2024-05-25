@@ -6,6 +6,9 @@ const {
   deleteUser,
   getAllUsers,
   sendToken,
+  forgetPass,
+  enterToken,
+  updatePass,
 } = require("../controllers/users.controller");
 const {
   verifyAdmin,
@@ -19,6 +22,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 router
   .route("/register")
   .post(verifyAdmin, upload.single("user_image"), registerUser);
+router.post("/forget-pass", forgetPass);
+router.post("/enter-token", enterToken);
+router.put("/update-pass", updatePass);
 router.route("/login").post(loginUser);
 router.route("/me").get(verifyToken, getUserInfo);
 router.delete("/deleteUser/:id", verifyAdmin, deleteUser);

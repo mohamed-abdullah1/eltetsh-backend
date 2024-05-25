@@ -5,6 +5,7 @@ const Post = require("../models/posts.model");
 const genJwt = require("../helpers/genJwt.helper");
 const Course = require("../models/courses.model");
 const { v4: uuidv4 } = require("uuid");
+const nodemailer = require("nodemailer");
 
 const { initializeApp } = require("firebase/app");
 const {
@@ -14,6 +15,7 @@ const {
   uploadBytesResumable,
 } = require("firebase/storage");
 const config = require("../config/firebase.config");
+const ForgetPassTokenUser = require("../models/forgetPass.model");
 const { getMetadata, list } = require("firebase/storage");
 const { QuizQuestions, QuizResults } = require("../models/quizes.model");
 // Initialize a firebase application
@@ -406,6 +408,100 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.status(200).json({ count: users.length, data: users });
 });
 
+const forgetPass = asyncHandler(async (req, res) => {
+  //generate token ==> make sure token isn't generated before;
+  //insert it to db
+  const { nationalId } = req.body;
+  const user = await User.findOne({ nationalId: nationalId });
+  console.log("👉🔥 ", user, nationalId);
+
+  if (!user) {
+    res.status(400);
+    throw new Error("user not found");
+  }
+  const generateRandomToken = () => {
+    return Math.floor(100000 + Math.random() * 900000);
+  };
+  let generatedToken = generateRandomToken();
+  const allTokens = await ForgetPassTokenUser.find({}, { token: 1 });
+  while (allTokens.includes(generatedToken)) {
+    generatedToken = generateRandomToken();
+  }
+  //send email
+  // Create a transporter object
+  let transporter = nodemailer.createTransport({
+    service: "gmail", // You can use other services like Yahoo, Outlook, etc.
+    auth: {
+      user: "collegeconnect55@gmail.com", // Your email address
+      pass: "mmpfcpghdzfismet", // Your email password or app-specific password
+    },
+  });
+  await ForgetPassTokenUser.create({ user: user?._id, token: generatedToken });
+
+  // Setup email data
+  let mailOptions = {
+    from: "collegeconnect55@gmail.com",
+    to: user?.email,
+    subject: "RESET PASSWORD",
+    text: `TOKEN IS ${generatedToken}`,
+  };
+  let info = await transporter.sendMail(mailOptions);
+  console.log("Message sent: %s", info.messageId, { info }, user?.email);
+
+  res.status(200).json({
+    message: "a token sent to your email",
+  });
+});
+const enterToken = asyncHandler(async (req, res) => {
+  const { token, nationalId } = req.body;
+  const user = await User.findOne({ nationalId: nationalId });
+  console.log("👉🔥 ", user, nationalId);
+
+  if (!user) {
+    res.status(400);
+    throw new Error("user not found");
+  }
+  const forgetToken = await ForgetPassTokenUser.findOneAndUpdate(
+    { token, user: user?._id },
+    { verified: true }
+  );
+  if (!forgetToken) {
+    res.status(400);
+    throw new Error("the token is wrong");
+  }
+
+  res.status(200).send({
+    message: "now you can update your password",
+  });
+});
+const updatePass = asyncHandler(async (req, res) => {
+  const { newPass, nationalId } = req.body;
+
+  //hash pass
+  const salt = await bcrypt.genSalt(10);
+  const hashedPass = await bcrypt.hash(newPass, salt);
+  const user = await User.findOne({ nationalId: nationalId });
+  console.log("👉🔥 ", user, nationalId);
+
+  if (!user) {
+    res.status(400);
+    throw new Error("user not found");
+  }
+  const token = await ForgetPassTokenUser({ user: user?._id, verified: true });
+  if (!token) {
+    res.status(400);
+    throw new Error("something went wrong");
+  }
+  await ForgetPassTokenUser.deleteOne({
+    token,
+    user: user?._id,
+  });
+  await User.updateOne({ _id: user?._id }, { password: hashedPass });
+  res.status(200).json({
+    message: "password updated successfully",
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -413,4 +509,7 @@ module.exports = {
   updateUserInfo,
   deleteUser,
   getAllUsers,
+  forgetPass,
+  enterToken,
+  updatePass,
 };
