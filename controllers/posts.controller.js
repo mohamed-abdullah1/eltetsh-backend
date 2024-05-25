@@ -51,33 +51,41 @@ const createPost = asyncHandler(async (req, res) => {
     }
   }
   const postFilesId = uuidv4();
+  let uploadedFiles, uploadedImage;
+  if (req?.files) {
+    const uploadToFirebase = async (file) => {
+      const storageRef = ref(storage, `posts/${uuidv4()}/${file.originalname}`);
 
-  const uploadToFirebase = async (file) => {
-    const storageRef = ref(storage, `posts/${uuidv4()}/${file.originalname}`);
+      // Create file metadata including the content type
+      const metadata = {
+        contentType: file.mimetype,
+      };
 
-    // Create file metadata including the content type
-    const metadata = {
-      contentType: file.mimetype,
+      // Upload the file in the bucket storage
+      const snapshot = await uploadBytesResumable(
+        storageRef,
+        file.buffer,
+        metadata
+      );
+      // Grab the public URL for each file
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      return downloadURL;
     };
-
-    // Upload the file in the bucket storage
-    const snapshot = await uploadBytesResumable(
-      storageRef,
-      file.buffer,
-      metadata
-    );
-    // Grab the public URL for each file
-    const downloadURL = await getDownloadURL(snapshot.ref);
-
-    return downloadURL;
-  };
-  const uploadedFilesPromises = req.files["posts_files"]?.map(uploadToFirebase);
-  const uploadedImagePromises = req.files["post_image"]?.map(uploadToFirebase);
-
-  // Wait for all files to be uploaded and processed
-  const uploadedFiles = await Promise.all(uploadedFilesPromises);
-  const uploadedImage = await Promise.all(uploadedImagePromises);
-  ////
+    const uploadedFilesPromises =
+      req.files["posts_files"]?.map(uploadToFirebase);
+    const uploadedImagePromises =
+      req.files["post_image"]?.map(uploadToFirebase);
+    // Wait for all files to be uploaded and processed
+    console.log("👉🔥 ", { uploadedFilesPromises, uploadedImagePromises });
+    if (uploadedFilesPromises) {
+      uploadedFiles = await Promise.all(uploadedFilesPromises);
+    }
+    if (uploadedImagePromises) {
+      uploadedImage = await Promise.all(uploadedImagePromises);
+    }
+    ////
+  }
   console.log("👉🔥 ", { uploadedFiles, uploadedImage });
 
   const post = new Post({
@@ -92,7 +100,7 @@ const createPost = asyncHandler(async (req, res) => {
       req.user.role === "staff" && course === "all" ? allCoursesIds : [course],
     postFilesId,
     postFiles: uploadedFiles,
-    postImage: uploadedImage[0],
+    postImage: uploadedImage ? uploadedImage[0] : "",
   });
   await post.save();
   res.status(201).json({ ...post?._doc });
