@@ -20,7 +20,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.route("/create").post(
   verifyToken,
   checkStuffOrDoctor,
-  upload.array("posts_files", 5),
+  upload.fields([
+    { name: "posts_files", maxCount: 5 },
+    { name: "post_image", maxCount: 1 },
+  ]),
   // upload.array("posts_images", 5),
   createPost
 );
@@ -31,7 +34,10 @@ router
   .put(
     verifyToken,
     checkStuffOrDoctor,
-    upload.array("posts_files", 5),
+    upload.fields([
+      { name: "posts_files", maxCount: 5 },
+      { name: "post_image", maxCount: 1 },
+    ]),
     updatePost
   )
   .delete(verifyToken, checkStuffOrDoctor, deletePost);

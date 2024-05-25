@@ -22,7 +22,8 @@ const postSchema = new mongoose.Schema(
     //     type: String,
     //   },
     // ],
-    postImages: [{ type: String }],
+    postFiles: [{ type: String, required: true }],
+    postImage: { type: String, required: true },
     title: {
       type: String,
       required: true,

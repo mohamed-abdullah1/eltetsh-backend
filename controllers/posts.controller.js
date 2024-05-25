@@ -51,13 +51,9 @@ const createPost = asyncHandler(async (req, res) => {
     }
   }
   const postFilesId = uuidv4();
-  //images,pdfs,files
 
-  const uploadedFilesPromises = req.files.map(async (file) => {
-    const storageRef = ref(
-      storage,
-      `posts/${postFilesId}/${file.originalname}`
-    );
+  const uploadToFirebase = async (file) => {
+    const storageRef = ref(storage, `posts/${uuidv4()}/${file.originalname}`);
 
     // Create file metadata including the content type
     const metadata = {
@@ -73,17 +69,17 @@ const createPost = asyncHandler(async (req, res) => {
     // Grab the public URL for each file
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    return {
-      name: file.originalname,
-      type: file.mimetype,
-      downloadURL: downloadURL,
-    };
-  });
+    return downloadURL;
+  };
+  const uploadedFilesPromises = req.files["posts_files"]?.map(uploadToFirebase);
+  const uploadedImagePromises = req.files["post_image"]?.map(uploadToFirebase);
 
   // Wait for all files to be uploaded and processed
   const uploadedFiles = await Promise.all(uploadedFilesPromises);
-
+  const uploadedImage = await Promise.all(uploadedImagePromises);
   ////
+  console.log("👉🔥 ", { uploadedFiles, uploadedImage });
+
   const post = new Post({
     title,
     content,
@@ -95,7 +91,8 @@ const createPost = asyncHandler(async (req, res) => {
     course:
       req.user.role === "staff" && course === "all" ? allCoursesIds : [course],
     postFilesId,
-    postFiles: uploadedFiles?.map((file) => file.downloadURL),
+    postFiles: uploadedFiles,
+    postImage: uploadedImage[0],
   });
   await post.save();
   res.status(201).json({ ...post?._doc });
@@ -224,9 +221,9 @@ const getPostById = asyncHandler(async (req, res) => {
 // @access  PRIVATE
 const updatePost = asyncHandler(async (req, res) => {
   const { title, content, course, department } = req.body;
-  let uploadedFiles;
+  let uploadedFiles, uploadedImage;
   if (req?.files) {
-    const uploadedFilesPromises = req.files.map(async (file) => {
+    const uploadToFirebase = async (file) => {
       const storageRef = ref(storage, `posts/${uuidv4()}/${file.originalname}`);
 
       // Create file metadata including the content type
@@ -243,25 +240,41 @@ const updatePost = asyncHandler(async (req, res) => {
       // Grab the public URL for each file
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      return {
-        name: file.originalname,
-        type: file.mimetype,
-        downloadURL: downloadURL,
-      };
-    });
-
+      return downloadURL;
+    };
+    const uploadedFilesPromises =
+      req.files["posts_files"]?.map(uploadToFirebase);
+    const uploadedImagePromises =
+      req.files["post_image"]?.map(uploadToFirebase);
     // Wait for all files to be uploaded and processed
-    uploadedFiles = await Promise.all(uploadedFilesPromises);
+    console.log("👉🔥 ", { uploadedFilesPromises, uploadedImagePromises });
+    if (uploadedFilesPromises) {
+      uploadedFiles = await Promise.all(uploadedFilesPromises);
+    }
+    if (uploadedImagePromises) {
+      uploadedImage = await Promise.all(uploadedImagePromises);
+    }
+    ////
   }
-  const newObj = req.files
-    ? {
-        title,
-        content,
-        course,
-        department,
-        postFiles: uploadedFiles.map((file) => file.downloadURL),
-      }
-    : { title, content, course, department };
+  const mainItems = { title, content, course, department };
+  const newObj =
+    req.files["posts_files"] && req.files["post_image"]
+      ? {
+          ...mainItems,
+          postFiles: uploadedFiles,
+          postImage: uploadedImage[0],
+        }
+      : req.files["posts_files"]
+      ? {
+          ...mainItems,
+          postFiles: uploadedFiles,
+        }
+      : req.files["post_image"]
+      ? {
+          ...mainItems,
+          postImage: uploadedImage[0],
+        }
+      : mainItems;
   const updatedPost = await Post.findOneAndUpdate(
     { _id: req.params.id },
     newObj,
