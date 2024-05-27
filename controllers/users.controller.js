@@ -491,7 +491,7 @@ const updatePass = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("user not found");
   }
-  const token = await ForgetPassTokenUser({ user: user?._id, verified: true });
+  const token = await ForgetPassTokenUser.findOne({ user: user?._id, verified: true });
   if (!token) {
     res.status(400);
     throw new Error("something went wrong");
