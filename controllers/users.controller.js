@@ -491,13 +491,16 @@ const updatePass = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("user not found");
   }
-  const token = await ForgetPassTokenUser.findOne({ user: user?._id, verified: true });
+  const token = await ForgetPassTokenUser.findOne({
+    user: user?._id,
+    verified: true,
+  });
   if (!token) {
     res.status(400);
     throw new Error("something went wrong");
   }
   await ForgetPassTokenUser.deleteOne({
-    token,
+    token: token.token,
     user: user?._id,
   });
   await User.updateOne({ _id: user?._id }, { password: hashedPass });
