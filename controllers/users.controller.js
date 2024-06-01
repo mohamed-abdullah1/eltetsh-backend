@@ -417,7 +417,7 @@ const forgetPass = asyncHandler(async (req, res) => {
   //insert it to db
   const { nationalId } = req.body;
   const user = await User.findOne({ nationalId: nationalId });
-  console.log("👉🔥 ", user, nationalId);
+  console.log("👉🔥 ", { user, nationalId });
 
   if (!user) {
     res.status(400);
@@ -499,10 +499,14 @@ const updatePass = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("something went wrong");
   }
-  await ForgetPassTokenUser.deleteOne({
+  console.log("👉🔥 ", { token });
+
+  let delRes = await ForgetPassTokenUser.deleteMany({
     token: token.token,
     user: user?._id,
   });
+  console.log("👉🔥 ", { delRes });
+
   await User.updateOne({ _id: user?._id }, { password: hashedPass });
   res.status(200).json({
     message: "password updated successfully",
