@@ -5,11 +5,11 @@ const cors = require("cors");
 const colors = require("colors");
 
 //routes
+const testRouter = require("./helpers/test.helper");
 const usersRouter = require("./routes/users.router");
 const courseRouter = require("./routes/courses.router");
 const departmentRouter = require("./routes/departments.router");
 const postRouter = require("./routes/posts.router");
-const testRouter = require("./helpers/test.helper");
 const quizRouter = require("./routes/quizes.router");
 const semesterScheduleRouter = require("./routes/semesterSchedule.router");
 const resultsRouter = require("./routes/results.router");
@@ -30,14 +30,14 @@ app.use(paginationMiddleware);
 
 connectDB();
 app.use("/", testRouter);
-app.use("/api/auth/", usersRouter);
-app.use("/api/courses/", courseRouter);
-app.use("/api/departments/", departmentRouter);
-app.use("/api/posts/", postRouter);
-app.use("/api/quiz/", quizRouter);
-app.use("/api/semester-schedule/", semesterScheduleRouter);
-app.use("/api/results/", resultsRouter);
-app.use("/api/notification/", notificationRouter);
+// app.use("/api/auth/", usersRouter);
+// app.use("/api/courses/", courseRouter);
+// app.use("/api/departments/", departmentRouter);
+// app.use("/api/posts/", postRouter);
+// app.use("/api/quiz/", quizRouter);
+// app.use("/api/semester-schedule/", semesterScheduleRouter);
+// app.use("/api/results/", resultsRouter);
+// app.use("/api/notification/", notificationRouter);
 
 app.use(errorMiddleware);
 app.use("*", function (_, res) {
