@@ -4,6 +4,7 @@ const router = require("express").Router();
 
 const test = (req, res) => res.status(200).json({ msg: "server is live 🖖🏼" });
 
-router.get("/", verifyAdmin, test);
+// router.get("/", verifyAdmin, test);
+router.get("/", test);
 
 module.exports = router;

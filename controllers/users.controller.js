@@ -18,68 +18,26 @@ const config = require("../config/firebase.config");
 const ForgetPassTokenUser = require("../models/forgetPass.model");
 const { getMetadata, list } = require("firebase/storage");
 const { QuizQuestions, QuizResults } = require("../models/quizes.model");
+const responseObject = require("../helpers/response.helper");
 // Initialize a firebase application
 initializeApp(config);
 // Initialize Cloud Storage and get a reference to the service
 const storage = getStorage();
+
 //@desc     Register a user
-//@route    POST /api/auth
-//@access   PRIVATE ADMIN ONLY
+//@route    POST /api/auth/register
+//@access   PUBLIC
 const registerUser = asyncHandler(async (req, res) => {
-  const {
-    name,
-    password,
-    email,
-    nationalId,
-    role,
-    department,
-    studentCourses = [],
-    doctorCourses = [],
-    year,
-  } = req.body;
+  const { name, password, username, role } = req.body;
   console.log({ body: req.body });
 
-  if (!name || !password || !email || !nationalId || !role) {
+  if (!name || !password || !username || !role) {
     res.status(400);
     throw new Error("please complete all fields");
-  }
-  //check year is there or not
-  if (role === "student" && year === undefined) {
-    res.status(400);
-    throw new Error("add year for that student");
   }
 
-  //!CHECK IF THE COURSE AND DEPARTMENT ENTERED BY THE USER ARE CONVIENENT
-  const courseExists = await Promise.all(
-    [...studentCourses, ...doctorCourses].map(async (item) => {
-      return !!(await Course.findOne({ _id: item.course, department }));
-    })
-  );
-  //check of all the studentCourses are at the same year
-  if (role === "student") {
-    studentCourses.forEach(async (sCourse) => {
-      const c = await Course.findOne({ _id: sCourse.course, year: year });
-      if (!c) {
-        res.status(400);
-        throw new Error("course is not in the year of this student");
-      }
-    });
-  }
-  if (courseExists.includes(false)) {
-    res.status(400);
-    throw new Error("Course is not in that department");
-  }
-  //
-  if (role === "student" && (!studentCourses || !year || !department)) {
-    res.status(400);
-    throw new Error("please complete all fields");
-  }
-  if (role === "doctor" && (!doctorCourses || !department)) {
-    res.status(400);
-    throw new Error("please complete all fields");
-  }
   //check if the user exists or not
-  const exists = !!(await User.findOne({ nationalId }));
+  const exists = !!(await User.findOne({ username }));
   if (exists) {
     res.status(400);
     throw new Error("User is already exist");
@@ -88,16 +46,12 @@ const registerUser = asyncHandler(async (req, res) => {
   //hash pass
   const salt = await bcrypt.genSalt(10);
   const hashedPass = await bcrypt.hash(password, salt);
-  const userImagesId = uuidv4();
 
-  //check course year same as the student year
-
-  //create user
-
-  //! USER IMAGE
+  //Create user
   let storageRef, metadata, downloadURL, snapshot;
+  //check if the user upload a file image or not first
   if (req?.file) {
-    storageRef = ref(storage, `users/${userImagesId}/${name}-profile-img`);
+    storageRef = ref(storage, `users/${username}/${username}-profile-img`);
 
     // Create file metadata including the content type
     metadata = {
@@ -115,84 +69,51 @@ const registerUser = asyncHandler(async (req, res) => {
     // Grab the public url
     downloadURL = await getDownloadURL(snapshot.ref);
   }
-  const newUserData =
-    role === "student"
-      ? {
-          name,
-          password: hashedPass,
-          email,
-          nationalId: nationalId + "",
-          role,
-          department,
-          studentCourses,
-          year,
-          userImagesId,
-          user_image: req?.file
-            ? downloadURL
-            : "https://camo.githubusercontent.com/a09826e3c20bbb772e71f52a449fdc9db3f58dff6ee2a0ab67ffdfd415f18760/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f372f37632f50726f66696c655f6176617461725f706c616365686f6c6465725f6c617267652e706e67",
-        }
-      : {
-          name,
-          password: hashedPass,
-          email,
-          nationalId: nationalId + "",
-          role,
-          department,
-          doctorCourses,
-          userImagesId,
-          user_image: req?.file
-            ? downloadURL
-            : "https://camo.githubusercontent.com/a09826e3c20bbb772e71f52a449fdc9db3f58dff6ee2a0ab67ffdfd415f18760/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f372f37632f50726f66696c655f6176617461725f706c616365686f6c6465725f6c617267652e706e67",
-        };
+  const newUserData = {
+    name,
+    password: hashedPass,
+    username,
+    role,
+    user_image: req?.file
+      ? downloadURL
+      : "https://camo.githubusercontent.com/a09826e3c20bbb772e71f52a449fdc9db3f58dff6ee2a0ab67ffdfd415f18760/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f372f37632f50726f66696c655f6176617461725f706c616365686f6c6465725f6c617267652e706e67",
+  };
   const newUser = await User.create(newUserData);
-  res.status(201).json({
-    _id: newUser?._doc?._id,
-    name: newUser?._doc?.name,
-    email: newUser?._doc?.email,
-    nationalId: newUser?._doc?.nationalId,
-    createdAt: newUser?._doc?.createdAt,
-    updatedAt: newUser?._doc?.updatedAt,
-    role: newUser?._doc?.role,
-    department: newUser?._doc?.department,
-    studentCourses: newUser?._doc?.studentCourses,
-    doctorCourses: newUser?._doc?.doctorCourses,
-    year: newUser?._doc?.year,
-    user_image: req?.file ? downloadURL : null,
-    token: genJwt(newUser?._doc?._id, newUser?._doc?.role),
-  });
+  const { password: password_, ...restNewUser } = newUser?._doc;
+  res
+    .status(201)
+    .json(responseObject(true, "User created successfully", restNewUser));
 });
 
 //@desc     Login a user
 //@route    POST /api/auth/login
 //@access   Public
 const loginUser = asyncHandler(async (req, res) => {
-  const { nationalId, password } = req.body;
-  if (!nationalId || !password) {
+  const { username, password } = req.body;
+  if (!username || !password) {
     res.status(400);
     throw new Error("complete all fields");
   }
-  const user = await User.findOne({ nationalId }).populate([
-    "department",
-    "studentCourses.course",
-    "doctorCourses.course",
-  ]);
+  const user = await User.findOne({ username });
   if (!user) {
     res.status(400);
     throw new Error("This user isn't in system, Please Sign Up First");
   }
-  const { password: pass, name, email, role, ...loggedUser } = user?._doc;
-
+  const { password: pass, name, role, ...loggedUser } = user?._doc;
+  //check if the password is wrong or not
   if (!(await bcrypt.compare(password, pass))) {
     res.status(401);
     throw new Error("try again, password is wrong");
   }
+
   res.status(200).json({
+    username,
     name,
-    email,
     role,
     token: genJwt(loggedUser?._id, role),
   });
 });
+
 //@desc     Login a user
 //@route    POST /api/auth/login
 //@access   Public

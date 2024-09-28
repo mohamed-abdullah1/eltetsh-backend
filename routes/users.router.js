@@ -19,9 +19,7 @@ const router = require("express").Router();
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
-router
-  .route("/register")
-  .post(verifyAdmin, upload.single("user_image"), registerUser);
+router.route("/register").post(upload.single("user_image"), registerUser);
 router.post("/forget-pass", forgetPass);
 router.post("/enter-token", enterToken);
 router.put("/update-pass", updatePass);

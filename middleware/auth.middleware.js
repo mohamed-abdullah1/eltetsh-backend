@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/users.model");
 const asyncHandler = require("express-async-handler");
+const ObjectId = require("mongoose").Types.ObjectId;
+
 const verifyToken = asyncHandler(async (req, res, next) => {
   let token;
   if (
@@ -11,15 +13,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
       //get token
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log({ decoded });
-      req.user = await User.findOne(
-        { _id: decoded?.id },
-        { password: false }
-      ).populate([
-        "department",
-        "studentCourses.course",
-        "doctorCourses.course",
-      ]);
+      req.user = await User.findOne({ _id: decoded?.id }, { password: false });
       next();
     } catch (err) {
       console.log(err);
@@ -32,7 +26,6 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     throw new Error("not authorized , no token");
   }
 });
-const ObjectId = require("mongoose").Types.ObjectId;
 
 const isUserOrAdmin = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
