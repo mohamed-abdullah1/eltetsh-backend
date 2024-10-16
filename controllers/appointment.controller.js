@@ -59,6 +59,10 @@ const bookAppointment = asyncHandler(async (req, res) => {
         };
   //add new appointment
   const newAppointment = await Appointment.create(insertedData);
+  //make the device unavailable
+  await Device.findByIdAndUpdate(deviceId, {
+    status: "busy",
+  });
   //respond
   res.status(201).json(
     responseObject(true, "Appointment Booked Successfully", {
@@ -99,7 +103,7 @@ const endAppointment = asyncHandler(async (req, res) => {
 //@route    POST /api/appointment/all
 //@access   ADMIN , MANAGER
 const getAllAppointments = asyncHandler(async (req, res) => {
-  const { filterByDepartment, filterByYear, filterByDay } = req.query;
+  // const { filterByDepartment, filterByYear, filterByDay } = req.query;
 
   const { skip, limit } = req.pagination;
   //filter by date
@@ -114,17 +118,21 @@ const getAllAppointments = asyncHandler(async (req, res) => {
     }
     // Otherwise, return all items without applying any search criteria
   }
-  const filterObj =
-    filterByDepartment && filterByYear
-      ? { department: filterByDepartment, year: filterByYear }
-      : filterByDepartment
-      ? { department: filterByDepartment }
-      : filterByYear
-      ? { year: filterByYear }
-      : {};
-  const appointments = await Appointment.find({ ...filterObj, ...query })
+  // const filterObj =
+  //   filterByDepartment && filterByYear
+  //     ? { department: filterByDepartment, year: filterByYear }
+  //     : filterByDepartment
+  //     ? { department: filterByDepartment }
+  //     : filterByYear
+  //     ? { year: filterByYear }
+  //     : {};
+  const appointments = await Appointment.find({
+    // ...filterObj
+    // ,
+    ...query,
+  })
     .sort({ createdAt: -1 })
-    // .populate("department")
+    .populate(["deviceId", "clientId"])
     .skip(skip)
     .limit(limit);
   res.status(200).json(

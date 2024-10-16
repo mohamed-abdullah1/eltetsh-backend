@@ -10,12 +10,9 @@ const usersRouter = require("./routes/users.router");
 const deviceRouter = require("./routes/device.router");
 const clientRouter = require("./routes/client.router");
 const appointmentRouter = require("./routes/appointment.router");
-const departmentRouter = require("./routes/departments.router");
-const postRouter = require("./routes/posts.router");
-const quizRouter = require("./routes/quizes.router");
-const semesterScheduleRouter = require("./routes/semesterSchedule.router");
-const resultsRouter = require("./routes/results.router");
-const notificationRouter = require("./routes/notification.router");
+const invoiceRouter = require("./routes/invoice.router");
+const drinkFoodRouter = require("./routes/drinkFood.router");
+// const notificationRouter = require("./routes/notification.router");
 //middlewares
 const { errorMiddleware } = require("./middleware/error.middleware");
 
@@ -36,6 +33,8 @@ app.use("/api/auth/", usersRouter);
 app.use("/api/device/", deviceRouter);
 app.use("/api/client/", clientRouter);
 app.use("/api/appointment/", appointmentRouter);
+app.use("/api/invoice/", invoiceRouter);
+app.use("/api/drinkFood/", drinkFoodRouter);
 
 app.use(errorMiddleware);
 app.use("*", function (_, res) {

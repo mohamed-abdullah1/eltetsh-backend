@@ -34,6 +34,10 @@ const appointmentSchema = new mongoose.Schema({
     enum: ["single", "multi"],
     required: true,
   },
+  ended: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
