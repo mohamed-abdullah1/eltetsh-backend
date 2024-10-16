@@ -184,6 +184,41 @@ const addAppointment = asyncHandler(async (req, res) => {
     })
   );
 });
+//@desc     add a drink to an invoice
+//@route    PUT /api/invoice/:invoiceId/add-drinkFood
+//@access   Public
+const addDrinkFood = asyncHandler(async (req, res) => {
+  const invoiceId = req.params.invoiceId;
+
+  //check if invoice exists or not
+  const invoice = await Invoice.findOne({ _id: invoiceId });
+  if (!invoice) {
+    res.status(400);
+    throw new Error("this invoice doesn't exist");
+  }
+  if (invoice.status === "paid" || invoice.ended) {
+    res.status(400);
+    throw new Error("this invoice has been ended");
+  }
+  const { drinkFoodId } = req.body;
+  if (!drinkFoodId) {
+    res.status(400);
+    throw new Error("Please include the drinkFoodId");
+  }
+
+  //update invoice
+  const newInvoice = await Invoice.findByIdAndUpdate(
+    { _id: invoiceId },
+    { drinksFoods: [...invoice.drinksFoods, drinkFoodId] },
+    { new: true, runValidators: true }
+  );
+  //respond
+  res.status(201).json(
+    responseObject(true, "Appointment Booked Successfully", {
+      ...newInvoice?._doc,
+    })
+  );
+});
 
 //@desc     end appointment
 //@route    PUT /api/invoice/:invoiceId/:appointmentId/endTime
@@ -260,15 +295,24 @@ const endInvoice = asyncHandler(async (req, res) => {
     if (!a.ended) {
       const _updatedAppointment = await Appointment.findByIdAndUpdate(
         a?._id,
-        {
-          ended: true,
-          endTime,
-          totalPrice:
-            calcTotalHours(a.startTime, endTime) *
-            (a.singleOrMulti == "single"
-              ? device?.singlePrice
-              : device?.multiPrice),
-        },
+        a?.type === "open"
+          ? {
+              ended: true,
+              endTime,
+              totalPrice:
+                calcTotalHours(a.startTime, endTime) *
+                (a.singleOrMulti == "single"
+                  ? device?.singlePrice
+                  : device?.multiPrice),
+            }
+          : {
+              ended: true,
+              totalPrice:
+                calcTotalHours(a.startTime, endTime) *
+                (a.singleOrMulti == "single"
+                  ? device?.singlePrice
+                  : device?.multiPrice),
+            },
         {
           new: true,
           runValidators: true,
@@ -283,6 +327,7 @@ const endInvoice = asyncHandler(async (req, res) => {
   ]);
   console.log("🔥✨ ", {
     updatedInvoice,
+    x: updatedInvoice?.appointments.map((a) => a.totalPrice),
   });
 
   // Update the invoice in the database
@@ -303,7 +348,7 @@ const endInvoice = asyncHandler(async (req, res) => {
       new: true,
       runValidators: true,
     }
-  ); // Set runValidators to true to run validation on update
+  ).populate(["appointments", "drinksFoods"]); // Set runValidators to true to run validation on update
   res
     .status(200)
     .json({ message: "updated successfully", data: _updatedInvoice });
@@ -406,4 +451,5 @@ module.exports = {
   endInvoice,
   endAppointment,
   addAppointment,
+  addDrinkFood,
 };
